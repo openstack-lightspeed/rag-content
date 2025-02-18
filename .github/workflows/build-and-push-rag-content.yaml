@@ -1,0 +1,83 @@
+name: "Build and push rag-content container image"
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+  schedule:
+    - cron: '15 02 * * *'
+
+env:
+  EXTRA_BUILD_ARGS: ""
+
+jobs:
+  build-and-push-rag-content:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          # This might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB.
+          tool-cache: true
+
+      - name: Checkout to the repository
+        uses: actions/checkout@v4
+
+      - name: Install podman
+        run: |
+          sudo apt update
+          sudo apt install podman -y
+
+      - name: Log in to registry.redhat.io
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.REDHAT_REGISTRY_LOGIN }}
+          password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
+          registry: registry.redhat.io
+
+      - name: Build only partiall rag-content when running in check pipeline
+        if: github.event_name != 'schedule'
+        run: |
+          echo EXTRA_BUILD_ARGS=OS_PROJECTS="nova" >> $GITHUB_ENV
+
+      - name: Build Image
+        id: build_image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ github.event.repository.name }}
+          tags: latest ${{ github.sha }}
+          oci: true
+          # We are using FLAVOR=cpu because Github runners do not offer GPUs and
+          # NUM_WORKERS is set to 4 because that's the default number of cores
+          # available ubuntu-latest runner.
+          build-args: |
+            FLAVOR=cpu
+            NUM_WORKERS=4
+            ${{ env.EXTRA_BUILD_ARGS }}
+          context: .
+          containerfiles: |
+            ./Containerfile
+
+      - name: Push the rag-content to quay.io
+        if: github.event_name == 'schedule'
+        uses: redhat-actions/push-to-registry@v2
+        id: push
+        with:
+          registry: quay.io/openstack-lightspeed
+          image: ${{ steps.build_image.outputs.image }}
+          tags: ${{ steps.build_image.outputs.tags }}
+          username: ${{ secrets.QUAY_IO_LOGIN }}
+          password: ${{ secrets.QUAY_IO_PASSWORD }}
