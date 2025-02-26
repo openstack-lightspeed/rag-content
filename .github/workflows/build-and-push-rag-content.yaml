@@ -35,7 +35,6 @@ jobs:
       - name: Install podman
         run: |
           sudo apt update
-          sudo apt install podman -y
           sudo apt install jq -y
 
       - name: Install cosign
