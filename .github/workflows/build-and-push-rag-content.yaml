@@ -16,7 +16,6 @@ on:
     - cron: '15 02 * * *'
 
 env:
-  EXTRA_BUILD_ARGS: ""
   IMAGE_NAME: quay.io/openstack-lightspeed/${{ github.event.repository.name }}
 
 jobs:
