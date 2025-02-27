@@ -53,7 +53,7 @@ jobs:
       - name: Build only partial rag-content when running in the check pipeline
         if: github.event_name != 'schedule' || github.event_name != 'push'
         run: |
-          echo EXTRA_BUILD_ARGS=OS_PROJECTS="nova" >> $GITHUB_ENV
+          echo OS_PROJECTS="nova" >> $GITHUB_ENV
 
       - name: Build image
         id: build_image
@@ -68,7 +68,7 @@ jobs:
           build-args: |
             FLAVOR=cpu
             NUM_WORKERS=4
-            ${{ env.EXTRA_BUILD_ARGS }}
+            OS_PROJECTS=${{ env.OS_PROJECTS }}
           context: .
           containerfiles: |
             ./Containerfile
