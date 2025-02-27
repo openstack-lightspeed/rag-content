@@ -12,7 +12,7 @@ WORKDIR /workdir
 COPY ./scripts/get_openstack_plaintext_docs.sh ./
 COPY ./scripts/generate_embeddings_openstack.py ./
 RUN pip install tox
-RUN ./get_openstack_plaintext_docs.sh ${OS_VERSION}
+RUN ./get_openstack_plaintext_docs.sh
 
 RUN pdm run python generate_embeddings_openstack.py \
         -o ./vector_db/ \
