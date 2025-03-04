@@ -7,7 +7,7 @@ on:
     branches:
       - main
 
-  pull_request:
+  pull_request_target:
     branches:
       - main
     types:
@@ -33,7 +33,14 @@ jobs:
           tool-cache: true
 
       - name: Checkout to the repository
+        if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v4
+
+      - name: Checkout pull request code (pull_request_target)
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v3.8.1
