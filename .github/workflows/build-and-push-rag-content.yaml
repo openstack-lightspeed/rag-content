@@ -39,7 +39,7 @@ jobs:
         uses: sigstore/cosign-installer@v3.8.1
 
       - name: Build only partial rag-content when running in the check pipeline
-        if: github.event_name != 'schedule' && github.event_name != 'push'
+        if: github.event_name == 'pull_request'
         run: |
           echo OS_PROJECTS="nova" >> $GITHUB_ENV
 
