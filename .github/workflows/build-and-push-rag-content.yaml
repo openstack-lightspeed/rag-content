@@ -38,13 +38,6 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v3.8.1
 
-      - name: Log in to registry.redhat.io
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.REDHAT_REGISTRY_LOGIN }}
-          password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
-          registry: registry.redhat.io
-
       - name: Build only partial rag-content when running in the check pipeline
         if: github.event_name != 'schedule' && github.event_name != 'push'
         run: |
