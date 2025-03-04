@@ -23,7 +23,6 @@ env:
 
 jobs:
   build-and-push-rag-content:
-    environment: trusted
     runs-on: ubuntu-latest
     steps:
       - name: Free disk space (Ubuntu)
