@@ -11,7 +11,8 @@ fi
 OS_VERSION=${OS_VERSION:-2024.2}
 
 # List of OpenStack Projects
-_OS_PROJECTS="nova neutron cinder keystone glance swift"
+_OS_PROJECTS="nova horizon keystone neutron cinder manila glance swift ceilometer \
+octavia designate heat placement ironic barbican aodh"
 OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
 # Read the environment variable into an array
 IFS=' ' read -r -a os_projects <<< "$OS_PROJECTS"
@@ -48,6 +49,25 @@ for project in "${os_projects[@]}"; do
     cd $project
     git switch stable/$OS_VERSION
     git pull origin stable/$OS_VERSION
+
+    # TODO(lpiwowar): Remove workarounds. Some of the documentations do not work with
+    # the feature of sphinx-build that allows generation of the docs in text format.
+    # List of issues:
+    #    * designate = with custom ext.support_matrix extension the generation of the
+    #                  documentation gets stuck in infinite loop
+    #
+    #    * ironic    = with sphinxcontrib.apidoc extension the generation of the
+    #                  documentation gets stuck in infinite loop
+    #
+    #    * heat      = AttributeError: 'TextTranslator' object has no attribute '_classifier_count_in_li'
+    #                  when doc/source/template_guide documentation is present
+    if [ "$project" == "designate" ]; then
+        sed -i "/'ext\.support_matrix',/d" "doc/source/conf.py"
+    elif [ "$project" == "ironic" ]; then
+        sed -i "/'sphinxcontrib\.apidoc',/d" "doc/source/conf.py"
+    elif [ "$project" == "heat" ]; then
+        rm -rf doc/source/template_guide/
+    fi
 
     if grep -q "text-docs" tox.ini; then
         echo "The text-docs target exists for $project"

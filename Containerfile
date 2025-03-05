@@ -11,6 +11,9 @@ WORKDIR /workdir
 
 COPY ./scripts/get_openstack_plaintext_docs.sh ./
 COPY ./scripts/generate_embeddings_openstack.py ./
+
+# Graphviz is needed to generate text documentation for octavia
+RUN dnf install -y graphviz
 RUN pip install tox
 RUN ./get_openstack_plaintext_docs.sh
 
