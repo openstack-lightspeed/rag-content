@@ -42,12 +42,12 @@ for project in "${os_projects[@]}"; do
 
     # Clone the project's repository, if not present
     if [ ! -d "$project" ]; then
-        git clone https://opendev.org/openstack/$project.git
+        git clone https://opendev.org/openstack/"$project".git
     fi
 
-    cd $project
-    git switch stable/$OS_VERSION
-    git pull origin stable/$OS_VERSION
+    cd "$project"
+    git switch stable/"$OS_VERSION"
+    git pull origin stable/"$OS_VERSION"
 
     if grep -q "text-docs" tox.ini; then
         echo "The text-docs target exists for $project"
@@ -62,19 +62,19 @@ for project in "${os_projects[@]}"; do
 
     # Copy documentation to project's output directory
     project_output_dir=$WORKING_DIR/openstack-docs-plaintext/$project
-    rm -rf $project_output_dir
-    mkdir -p $project_output_dir
-    cp -r doc/build/text $project_output_dir/$OS_VERSION
+    rm -rf "$project_output_dir"
+    mkdir -p "$project_output_dir"
+    cp -r doc/build/text "$project_output_dir"/"$OS_VERSION"
 
     # Remove artifacts
-    rm -rf $project_output_dir/$OS_VERSION/{_static/,.doctrees/}
+    rm -rf "$project_output_dir"/"$OS_VERSION"/{_static/,.doctrees/}
 
     # Exit project's directory
     cd -
 done
 
-rm -rf $CURR_DIR/openstack-docs-plaintext/*/${OS_VERSION}
-cp -r $WORKING_DIR/openstack-docs-plaintext $CURR_DIR
+rm -rf "$CURR_DIR"/openstack-docs-plaintext/*/"${OS_VERSION}"
+cp -r "$WORKING_DIR"/openstack-docs-plaintext "$CURR_DIR"
 
 # TODO(lucasagomes): Should we delete the working directory ?!
 echo "Done. Documents can be found at $CURR_DIR/openstack-docs-plaintext"
