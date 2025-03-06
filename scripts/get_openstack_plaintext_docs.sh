@@ -12,7 +12,7 @@ OS_VERSION=${OS_VERSION:-2024.2}
 
 # List of OpenStack Projects
 _OS_PROJECTS="nova horizon keystone neutron cinder manila glance swift ceilometer \
-octavia designate heat placement ironic barbican aodh"
+octavia designate heat placement ironic barbican aodh watcher"
 OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
 # Read the environment variable into an array
 IFS=' ' read -r -a os_projects <<< "$OS_PROJECTS"
