@@ -14,11 +14,13 @@ OS_VERSION=${OS_VERSION:-2024.2}
 _OS_PROJECTS="nova horizon keystone neutron cinder manila glance swift ceilometer \
 octavia designate heat placement ironic barbican aodh watcher"
 OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
+
 # Read the environment variable into an array
 IFS=' ' read -r -a os_projects <<< "$OS_PROJECTS"
 
 # Working directory
 WORKING_DIR="/tmp/os_docs_temp"
+
 # Tox text-docs target
 TOX_TEXT_DOCS_TARGET="
 
@@ -31,14 +33,16 @@ deps =
 commands =
   sphinx-build --keep-going -j auto -b text doc/source doc/build/text
 "
+
 # The current directory where the script was invoked
 CURR_DIR=$(pwd)
 
-mkdir -p $WORKING_DIR
-cd $WORKING_DIR
-echo "Working directory: $WORKING_DIR"
+# Number of availables CPUS
+NUM_CPUS=$(nproc)
 
-for project in "${os_projects[@]}"; do
+generate_text_doc() {
+    local project=$1
+
     echo "Generating the plain-text documentation for OpenStack $project"
 
     # Clone the project's repository, if not present
@@ -81,7 +85,7 @@ for project in "${os_projects[@]}"; do
     tox -etext-docs
 
     # Copy documentation to project's output directory
-    project_output_dir=$WORKING_DIR/openstack-docs-plaintext/$project
+    local project_output_dir=$WORKING_DIR/openstack-docs-plaintext/$project
     rm -rf "$project_output_dir"
     mkdir -p "$project_output_dir"
     cp -r doc/build/text "$project_output_dir"/"$OS_VERSION"
@@ -91,7 +95,32 @@ for project in "${os_projects[@]}"; do
 
     # Exit project's directory
     cd -
+}
+
+mkdir -p $WORKING_DIR
+cd $WORKING_DIR
+echo "Working directory: $WORKING_DIR"
+
+num_running_proc=0
+declare -a log_files
+for os_project in "${os_projects[@]}"
+do
+    os_project_log_file=$(mktemp temp_os_project_XXXXX.log)
+    log_files+=("${os_project_log_file}")
+    echo "Generating documentation for ${os_project} (logs ${os_project_log_file})"
+    generate_text_doc "$os_project" > "${os_project_log_file}" 2>&1 &
+
+    num_running_proc=$((num_running_proc + 1))
+    if [ ${num_running_proc} -ge "${NUM_CPUS}" ]; then
+        echo "Running ${num_running_proc} processes in ${NUM_CPUS} CPUs environment. Waiting ..."
+        wait -n
+        num_running_proc=$((num_running_proc - 1))
+    fi
 done
+
+echo "Waiting for the last process to finish the generation of the documentation."
+wait
+cat "${log_files[@]}"
 
 rm -rf "$CURR_DIR"/openstack-docs-plaintext/*/"${OS_VERSION}"
 cp -r "$WORKING_DIR"/openstack-docs-plaintext "$CURR_DIR"
