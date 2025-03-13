@@ -2,84 +2,69 @@
 
 """Utility script to generate embeddings."""
 
+import logging
 import os
-import sys
-import time
 
-# Add the common_embedding.py to the Python path
-scripts_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(scripts_dir)
+from lightspeed_rag_content import utils
+from lightspeed_rag_content.metadata_processor import MetadataProcessor
+from lightspeed_rag_content.document_processor import DocumentProcessor
 
-from common_embeddings import (
-    FileMetadataProcessor,
-    get_common_arg_parser,
-    filter_out_invalid_nodes,
-    save_index,
-    save_metadata,
-    process_documents,
-    get_settings,
-    print_unreachable_docs_warning
+logging.basicConfig(
+    level=logging.WARNING, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # The OpenStack documentation base URL
 OS_DOCS_ROOT_URL = "https://docs.openstack.org"
 
-class OpenstackDocsMetadataProcessor(FileMetadataProcessor):
+
+class OpenstackDocsMetadataProcessor(MetadataProcessor):
 
     def __init__(self, docs_path, base_url):
-        super().__init__()
+        super(OpenstackDocsMetadataProcessor, self).__init__()
         self._base_path = os.path.abspath(docs_path)
-        if self._base_path.endswith('/'):
+        if self._base_path.endswith("/"):
             self._base_path = self._base_path[:-1]
-
         self.base_url = base_url
 
     def url_function(self, file_path):
-        return (  # noqa: E731
+        return (
             self.base_url
             + file_path.removeprefix(self._base_path).removesuffix("txt")
             + "html"
         )
 
+
 if __name__ == "__main__":
-
-    start_time = time.time()
-
-    parser = get_common_arg_parser()
+    parser = utils.get_common_arg_parser()
     args = parser.parse_args()
     print(f"Arguments used: {args}")
 
-    # OLS-823: sanitize directory
-    PERSIST_FOLDER = os.path.normpath("/" + args.output).lstrip("/")
-    if PERSIST_FOLDER == "":
-        PERSIST_FOLDER = "."
+    output_dir = os.path.normpath("/" + args.output).lstrip("/")
+    if output_dir == "":
+        output_dir = "."
 
-    os.environ["HF_HOME"] = args.model_dir
-    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    # Instantiate Metadata Processor
+    metadata_processor = OpenstackDocsMetadataProcessor(args.folder, OS_DOCS_ROOT_URL)
 
-    settings, embedding_dimension, storage_context = get_settings(
-        args.chunk, args.overlap, args.model_dir)
+    # Instantiate Document Processor
+    document_processor = DocumentProcessor(
+        args.chunk,
+        args.overlap,
+        args.model_name,
+        args.model_dir,
+        args.workers,
+        args.vector_store_type,
+        args.index.replace("-", "_"),
+    )
 
-    metadata_processor = OpenstackDocsMetadataProcessor(
-        args.folder, OS_DOCS_ROOT_URL)
+    # Process documents
+    document_processor.process(
+        args.folder,
+        metadata=metadata_processor,
+        required_exts=[
+            ".txt",
+        ],
+    )
 
-    # Load documents
-    documents = process_documents(
-        args.folder, metadata_func=metadata_processor.file_metadata_func,
-        required_exts=['.txt',], num_workers=args.workers)
-    unreachables = metadata_processor.n_unreachable_urls()
-    # Create chunks/nodes
-    nodes = settings.text_splitter.get_nodes_from_documents(documents)
-
-    # Filter out invalid nodes
-    good_nodes = filter_out_invalid_nodes(nodes)
-
-    # Create & save Index
-    save_index(good_nodes, storage_context, args.index, PERSIST_FOLDER)
-
-    # Save metadata
-    save_metadata(start_time, args, embedding_dimension, documents,
-                  PERSIST_FOLDER)
-    if unreachables > 0:
-        print_unreachable_docs_warning(unreachables)
-
+    # Save to the output directory
+    document_processor.save(args.index, output_dir)
