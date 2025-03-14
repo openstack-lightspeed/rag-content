@@ -18,7 +18,6 @@ OS_DOCS_ROOT_URL = "https://docs.openstack.org"
 
 
 class OpenstackDocsMetadataProcessor(MetadataProcessor):
-
     def __init__(self, docs_path, base_url):
         super(OpenstackDocsMetadataProcessor, self).__init__()
         self._base_path = os.path.abspath(docs_path)
