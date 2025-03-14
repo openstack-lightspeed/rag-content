@@ -1,0 +1,1 @@
+lightspeed-rag-content @ git+https://github.com/road-core/rag-content@main
