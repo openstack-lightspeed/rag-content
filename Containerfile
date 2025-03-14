@@ -1,5 +1,5 @@
 ARG FLAVOR=cpu
-FROM ghcr.io/road-core/rag-content:latest-${FLAVOR} as road-core-rag-builder
+FROM ghcr.io/road-core/rag-content-${FLAVOR}:latest as road-core-rag-builder
 ARG OS_VERSION=2024.2
 ARG OS_PROJECTS
 ARG NUM_WORKERS=1
