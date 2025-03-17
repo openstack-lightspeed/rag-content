@@ -1,13 +1,11 @@
-# TODO(lpiwowar): This needs to be updated once we move have the base image
-#                 available either on quay or ghcr
 ARG FLAVOR=cpu
-FROM quay.io/lpiwowar/${FLAVOR}-road-core-base:latest as road-core-rag-builder
+FROM ghcr.io/road-core/rag-content-${FLAVOR}:latest as road-core-rag-builder
 ARG OS_VERSION=2024.2
 ARG OS_PROJECTS
 ARG NUM_WORKERS=1
 
 USER 0
-WORKDIR /workdir
+WORKDIR /rag-content
 
 COPY ./scripts/get_openstack_plaintext_docs.sh ./
 COPY ./scripts/generate_embeddings_openstack.py ./
@@ -17,7 +15,7 @@ RUN dnf install -y graphviz
 RUN pip install tox
 RUN ./get_openstack_plaintext_docs.sh
 
-RUN pdm run python generate_embeddings_openstack.py \
+RUN python ./generate_embeddings_openstack.py \
         -o ./vector_db/ \
         -f openstack-docs-plaintext/ \
         -md embeddings_model \
@@ -26,8 +24,8 @@ RUN pdm run python generate_embeddings_openstack.py \
         -w ${NUM_WORKERS}
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
-COPY --from=road-core-rag-builder /workdir/vector_db /rag/vector_db/os_product_docs
-COPY --from=road-core-rag-builder /workdir/embeddings_model /rag/embeddings_model
+COPY --from=road-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
+COPY --from=road-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
 
 RUN mkdir /licenses
 COPY LICENSE /licenses/
