@@ -11,7 +11,8 @@ COPY ./scripts/get_openstack_plaintext_docs.sh ./
 COPY ./scripts/generate_embeddings_openstack.py ./
 
 # Graphviz is needed to generate text documentation for octavia
-RUN dnf install -y graphviz
+# python-devel and pcre-devel are needed for python-openstackclient
+RUN dnf install -y graphviz python-devel pcre-devel
 RUN pip install tox
 RUN ./get_openstack_plaintext_docs.sh
 
