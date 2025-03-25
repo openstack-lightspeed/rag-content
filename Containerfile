@@ -1,27 +1,48 @@
 ARG FLAVOR=cpu
 FROM ghcr.io/road-core/rag-content-${FLAVOR}:latest as road-core-rag-builder
+ARG INDEX_NAME=os-docs-${OS_VERSION}
 ARG OS_VERSION=2024.2
 ARG OS_PROJECTS
 ARG NUM_WORKERS=1
+ARG RHOSO_DOCS_GIT_URL=""
+ARG RHOSO_DOCS_ATTRIBUTES_FILE_URL=""
 
 USER 0
 WORKDIR /rag-content
 
-COPY ./scripts/get_openstack_plaintext_docs.sh ./
-COPY ./scripts/generate_embeddings_openstack.py ./
+COPY ./scripts ./scripts
 
 # Graphviz is needed to generate text documentation for octavia
 RUN dnf install -y graphviz
 RUN pip install tox
-RUN ./get_openstack_plaintext_docs.sh
 
-RUN python ./generate_embeddings_openstack.py \
-        -o ./vector_db/ \
-        -f openstack-docs-plaintext/ \
-        -md embeddings_model \
-        -mn ${EMBEDDING_MODEL} \
-        -i os-docs-${OS_VERSION} \
-        -w ${NUM_WORKERS}
+RUN if [ -z "${RHOSO_DOCS_GIT_URL}" ]; then \
+        ./scripts/get_openstack_plaintext_docs.sh; \
+    fi
+
+RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
+        ./scripts/get_rhoso_plaintext_docs.sh; \
+    fi
+
+RUN if [ -z "${RHOSO_DOCS_GIT_URL}" ]; then \
+        python ./scripts/generate_embeddings_openstack.py \
+            --output ./vector_db/ \
+            --openstack-folder openstack-docs-plaintext/ \
+            --model-dir embeddings_model \
+            --model-name ${EMBEDDING_MODEL} \
+            --index ${INDEX_NAME} \
+            --workers ${NUM_WORKERS}; \
+    fi
+
+RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
+        python ./scripts/generate_embeddings_openstack.py \
+            --output ./vector_db/ \
+            --rhoso-folder openstack-docs-plaintext/ \
+            --model-dir embeddings_model \
+            --model-name ${EMBEDDING_MODEL} \
+            --index ${INDEX_NAME} \
+            --workers ${NUM_WORKERS}; \
+    fi
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=road-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
