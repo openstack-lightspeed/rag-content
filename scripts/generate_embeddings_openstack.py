@@ -150,10 +150,6 @@ if __name__ == "__main__":
     parser = get_argument_parser()
     args = parser.parse_args()
 
-    output_dir = os.path.normpath("/" + str(args.output)).lstrip("/")
-    if output_dir == "":
-        output_dir = "."
-
     # Instantiate Document Processor
     document_processor = DocumentProcessor(
         args.chunk,
@@ -182,4 +178,4 @@ if __name__ == "__main__":
     )
 
     # Save to the output directory
-    document_processor.save(args.index, str(output_dir))
+    document_processor.save(args.index, str(args.output))
