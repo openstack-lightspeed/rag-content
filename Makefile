@@ -1,6 +1,10 @@
 # Default to CPU if not specified
-FLAVOR 		?= cpu
-NUM_WORKERS ?= $$(( $(shell nproc --all) / 2))
+FLAVOR                         ?= cpu
+NUM_WORKERS                    ?= $$(( $(shell nproc --all) / 2))
+OS_VERSION                     ?= 2024.2
+INDEX_NAME                     ?= os-docs-$(OS_VERSION)
+RHOSO_DOCS_GIT_URL             ?= ""
+RHOSO_DOCS_ATTRIBUTES_FILE_URL ?= ""
 
 # Define behavior based on the flavor
 ifeq ($(FLAVOR),cpu)
@@ -15,7 +19,11 @@ build-image-os: ## Build a openstack rag-content container image
 	podman build -t rag-content-openstack:latest -f ./Containerfile \
 	--build-arg FLAVOR=$(TORCH_GROUP) \
 	--build-arg NUM_WORKERS=$(NUM_WORKERS) \
-	--build-arg OS_PROJECTS=$(OS_PROJECTS) . 
+	--build-arg OS_PROJECTS=$(OS_PROJECTS) \
+	--build-arg OS_VERSION=$(OS_VERSION) \
+	--build-arg RHOSO_DOCS_GIT_URL=$(RHOSO_DOCS_GIT_URL) \
+	--build-arg RHOSO_DOCS_ATTRIBUTES_FILE_URL=$(RHOSO_DOCS_ATTRIBUTES_FILE_URL) \
+	--build-arg INDEX_NAME=$(INDEX_NAME) .
 
 help: ## Show this help screen
 	@echo 'Usage: make <OPTIONS> ... <TARGETS>'
