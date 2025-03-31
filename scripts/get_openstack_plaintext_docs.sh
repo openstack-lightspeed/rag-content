@@ -30,7 +30,7 @@ OS_VERSION=${OS_VERSION:-2024.2}
 # List of OpenStack Projects
 _OS_PROJECTS="nova horizon keystone neutron cinder manila glance swift ceilometer \
 octavia designate heat placement ironic barbican aodh watcher adjutant blazar \
-cloudkitty cyborg magnum mistral skyline-apiserver skyline-console storlets \
+cyborg magnum mistral skyline-apiserver skyline-console storlets \
 venus vitrage zun python-openstackclient tempest trove zaqar masakari"
 OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
 
