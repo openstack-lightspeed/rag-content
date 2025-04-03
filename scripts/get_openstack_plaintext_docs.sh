@@ -168,7 +168,7 @@ for os_project in "${os_projects[@]}"; do
     generate_text_doc "$os_project" "$_os_version" > "${os_project_log_file}" 2>&1 &
 
     num_running_subproc=$(jobs -r | wc -l)
-    if [ "${num_running_subproc}" -gt "${NUM_WORKERS}" ]; then
+    if [ "${num_running_subproc}" -ge "${NUM_WORKERS}" ]; then
         echo "Using ${num_running_subproc}/${NUM_WORKERS} workers. Waiting ..."
         wait -n || log_and_die "Subprocess generating text documentation failed!"
 	echo "Using $(( --num_running_subproc ))/${NUM_WORKERS} workers."

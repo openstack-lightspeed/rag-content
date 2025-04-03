@@ -1,7 +1,7 @@
 ARG FLAVOR=cpu
 FROM ghcr.io/road-core/rag-content-${FLAVOR}:latest as road-core-rag-builder
-ARG INDEX_NAME=os-docs-${OS_VERSION}
 ARG OS_VERSION=2024.2
+ARG INDEX_NAME=os-docs-${OS_VERSION}
 ARG OS_PROJECTS
 ARG NUM_WORKERS=1
 ARG RHOSO_DOCS_GIT_URL=""
