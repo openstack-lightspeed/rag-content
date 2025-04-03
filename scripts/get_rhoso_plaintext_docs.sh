@@ -41,7 +41,7 @@ generate_text_docs_rhoso() {
         python ./scripts/rhoso_adoc_docs_to_text.py \
             --input-dir "${subdir}" \
             --attributes-file "${attributes_file}" \
-            --output-dir rhoso-docs-plaintext/
+            --output-dir openstack-docs-plaintext/
     done
 }
 
