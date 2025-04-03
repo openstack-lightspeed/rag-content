@@ -116,7 +116,7 @@ def red_hat_docs_path(
                 continue
 
             if (path_title := get_xml_element_text(tree, "title")) is None:
-                LOG.warning(f"{docinfo} title is blanks Skipping ...")
+                LOG.warning(f"{docinfo} title is blank. Skipping ...")
                 continue
 
             path_title = path_title.lower().replace(" ", "_")
