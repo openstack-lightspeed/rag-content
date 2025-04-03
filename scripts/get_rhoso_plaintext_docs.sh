@@ -37,11 +37,12 @@ generate_text_docs_rhoso() {
     # TODO(lpiwowar): Remove -k (skips validation of the certificate)
     curl -L -k -o "${attributes_file}" "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}"
 
-    # TODO(lpiwowar): Process other folders than "titles"
-    python ./scripts/rhoso_adoc_docs_to_text.py \
-        --input-dir ${rhoso_docs_folder}/titles \
-        --attributes-file ${attributes_file} \
-        --output-dir openstack-docs-plaintext/
+    for subdir in "${rhoso_docs_folder}/titles" "${rhoso_docs_folder}"/doc-*; do
+        python ./scripts/rhoso_adoc_docs_to_text.py \
+            --input-dir "${subdir}" \
+            --attributes-file "${attributes_file}" \
+            --output-dir rhoso-docs-plaintext/
+    done
 }
 
 generate_text_docs_rhoso

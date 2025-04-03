@@ -19,6 +19,7 @@ import argparse
 from pathlib import Path
 import logging
 from lightspeed_rag_content.asciidoc import AsciidoctorConverter
+from packaging.version import Version
 from typing import Generator, Tuple
 import xml.etree.ElementTree as ET
 
@@ -107,10 +108,15 @@ def red_hat_docs_path(
             docinfo_content = f.read()
             tree = ET.fromstring(f"<root>{docinfo_content}</root>")
 
-            if get_xml_element_text(tree, "productnumber") != docs_version:
+            productnumber = get_xml_element_text(tree, "productnumber")
+            if Version(productnumber) != Version(docs_version):
+                LOG.warning(
+                    f"{docinfo} productnumber {productnumber} != {docs_version}. Skipping ..."
+                )
                 continue
 
             if (path_title := get_xml_element_text(tree, "title")) is None:
+                LOG.warning(f"{docinfo} title is blanks Skipping ...")
                 continue
 
             path_title = path_title.lower().replace(" ", "_")
