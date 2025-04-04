@@ -28,7 +28,7 @@ RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
 RUN if [ -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         python ./scripts/generate_embeddings_openstack.py \
             --output ./vector_db/ \
-            --openstack-folder openstack-docs-plaintext/ \
+            --folder openstack-docs-plaintext/ \
             --model-dir embeddings_model \
             --model-name ${EMBEDDING_MODEL} \
             --index ${INDEX_NAME} \
