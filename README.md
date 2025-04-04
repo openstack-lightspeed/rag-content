@@ -34,21 +34,13 @@ pip install -r requirements.txt
 ./scripts/get_openstack_plaintext_docs.sh
 ```
 
-5. Download `download_embeddings_model.py` from [road-core/rag-content](https://github.com/road-core/rag-content).
+5. Download the embedding model.
 
 ```
-curl -O https://raw.githubusercontent.com/road-core/rag-content/refs/heads/main/scripts/download_embeddings_model.py
+make get-embeddings
 ```
 
-6. Download the embedding model.
-
-```
-python ./download_embeddings_model.py \
-    -l ./embeddings_model/ \
-    -r sentence-transformers/all-mpnet-base-v2
-```
-
-7. Generate the vector database.
+6. Generate the vector database.
 
 ```
 python ./scripts/generate_embeddings_openstack.py \
@@ -60,7 +52,7 @@ python ./scripts/generate_embeddings_openstack.py \
         -w $(( $(nproc --all) / 2 ))
 ```
 
-8. Use the vector database stored in `./vector_db`.
+7. Use the vector database stored in `./vector_db`.
 
 
 ## Build Container Image Containing OpenStack Vector Database
