@@ -24,6 +24,9 @@ RHOSO_DOCS_GIT_URL=${RHOSO_DOCS_GIT_URL:-}
 RHOSO_DOCS_ATTRIBUTES_FILE_URL=${RHOSO_DOCS_ATTRIBUTES_FILE_URL:-}
 [ -z "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}" ] && echo "Err: Mising RHOSO_DOCS_ATTRIBUTES_FILE_URL!" && exit 1
 
+# The name of the output directory
+OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-docs-plaintext}
+
 # Clone RHOSO documentation and generate vector database for it
 generate_text_docs_rhoso() {
     local rhoso_docs_folder="./rhoso_docs"
@@ -41,7 +44,7 @@ generate_text_docs_rhoso() {
         python ./scripts/rhoso_adoc_docs_to_text.py \
             --input-dir "${subdir}" \
             --attributes-file "${attributes_file}" \
-            --output-dir openstack-docs-plaintext/
+            --output-dir "$OUTPUT_DIR_NAME/"
     done
 }
 
