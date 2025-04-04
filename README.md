@@ -43,7 +43,7 @@ curl -O https://raw.githubusercontent.com/road-core/rag-content/refs/heads/main/
 6. Download the embedding model.
 
 ```
-python ./download_embeddings_model.py \
+python3.11 ./download_embeddings_model.py \
     -l ./embeddings_model/ \
     -r sentence-transformers/all-mpnet-base-v2
 ```
@@ -51,7 +51,7 @@ python ./download_embeddings_model.py \
 7. Generate the vector database.
 
 ```
-python ./scripts/generate_embeddings_openstack.py \
+python3.11 ./scripts/generate_embeddings_openstack.py \
         -o ./vector_db/ \
         -of openstack-docs-plaintext/ \
         -md embeddings_model \
