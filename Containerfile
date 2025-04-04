@@ -23,23 +23,22 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
     fi
 
 RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        OUTPUT_DIR_NAME=rhoso-docs-plaintext ./scripts/get_rhoso_plaintext_docs.sh; \
+        ./scripts/get_rhoso_plaintext_docs.sh; \
     fi
 
-RUN CMD="python ./scripts/generate_embeddings_openstack.py"; \
-    CMD="$CMD --output ./vector_db/"; \
-    CMD="$CMD --model-dir embeddings_model"; \
-    CMD="$CMD --model-name ${EMBEDDING_MODEL}"; \
-    CMD="$CMD --index ${INDEX_NAME}"; \
-    CMD="$CMD --workers ${NUM_WORKERS}"; \
-    if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
-        CMD="$CMD --folder openstack-docs-plaintext/"; \
-    fi; \
+RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
+        FOLDER_ARG="--folder openstack-docs-plaintext"; \
+    fi && \
     if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        CMD="$CMD --rhoso-folder rhoso-docs-plaintext"; \
-    fi; \
-    echo "Running: $CMD"; \
-    eval $CMD
+        FOLDER_ARG="$FOLDER_ARG --rhoso-folder rhoso-docs-plaintext"; \
+    fi && \
+    python ./scripts/generate_embeddings_openstack.py \
+    --output ./vector_db/ \
+    --model-dir embeddings_model \
+    --model-name ${EMBEDDING_MODEL} \
+    --index ${INDEX_NAME} \
+    --workers ${NUM_WORKERS} \
+    ${FOLDER_ARG}
 
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
