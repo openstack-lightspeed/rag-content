@@ -53,7 +53,7 @@ python ./download_embeddings_model.py \
 ```
 python ./scripts/generate_embeddings_openstack.py \
         -o ./vector_db/ \
-        -of openstack-docs-plaintext/ \
+        -f openstack-docs-plaintext/ \
         -md embeddings_model \
         -mn sentence-transformers/all-mpnet-base-v2 \
         -i os-docs \

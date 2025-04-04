@@ -6,6 +6,7 @@ ARG OS_PROJECTS
 ARG NUM_WORKERS=1
 ARG RHOSO_DOCS_GIT_URL=""
 ARG RHOSO_DOCS_ATTRIBUTES_FILE_URL=""
+ARG BUILD_UPSTREAM_DOCS=true
 
 USER 0
 WORKDIR /rag-content
@@ -17,7 +18,7 @@ COPY ./scripts ./scripts
 RUN dnf install -y graphviz python-devel pcre-devel
 RUN pip install tox
 
-RUN if [ -z "${RHOSO_DOCS_GIT_URL}" ]; then \
+RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         ./scripts/get_openstack_plaintext_docs.sh; \
     fi
 
@@ -25,25 +26,20 @@ RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         ./scripts/get_rhoso_plaintext_docs.sh; \
     fi
 
-RUN if [ -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        python ./scripts/generate_embeddings_openstack.py \
-            --output ./vector_db/ \
-            --openstack-folder openstack-docs-plaintext/ \
-            --model-dir embeddings_model \
-            --model-name ${EMBEDDING_MODEL} \
-            --index ${INDEX_NAME} \
-            --workers ${NUM_WORKERS}; \
-    fi
+RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
+        FOLDER_ARG="--folder openstack-docs-plaintext"; \
+    fi && \
+    if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
+        FOLDER_ARG="$FOLDER_ARG --rhoso-folder rhoso-docs-plaintext"; \
+    fi && \
+    python ./scripts/generate_embeddings_openstack.py \
+    --output ./vector_db/ \
+    --model-dir embeddings_model \
+    --model-name ${EMBEDDING_MODEL} \
+    --index ${INDEX_NAME} \
+    --workers ${NUM_WORKERS} \
+    ${FOLDER_ARG}
 
-RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        python ./scripts/generate_embeddings_openstack.py \
-            --output ./vector_db/ \
-            --rhoso-folder openstack-docs-plaintext/ \
-            --model-dir embeddings_model \
-            --model-name ${EMBEDDING_MODEL} \
-            --index ${INDEX_NAME} \
-            --workers ${NUM_WORKERS}; \
-    fi
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=road-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
