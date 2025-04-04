@@ -26,9 +26,9 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg RHOSO_DOCS_ATTRIBUTES_FILE_URL=$(RHOSO_DOCS_ATTRIBUTES_FILE_URL) \
 	--build-arg INDEX_NAME=$(INDEX_NAME) .
 
-get-embeddings:
+get-embeddings-model: ## Download embeddings model from the openstack-lightspeed/rag-content container image
 	podman create --replace --name tmp-rag-container $(OSLS_CONTAINER) true
-	rm -rf vector_db embeddings_model
+	rm -rf embeddings_model
 	podman cp tmp-rag-container:/rag/embeddings_model embeddings_model
 	podman rm tmp-rag-container
 

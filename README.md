@@ -37,8 +37,21 @@ pip install -r requirements.txt
 5. Download the embedding model.
 
 ```
-make get-embeddings
+make get-embeddings-model
 ```
+
+> **Note:**
+> The get-embeddings-model target pulls in the embedding
+> model from the most recent build. To download it from
+> source, use the `download_embeddings_model.py` script from
+> [road-core/rag-content](https://github.com/road-core/rag-content):
+>
+> ```bash
+> curl -O https://raw.githubusercontent.com/road-core/rag-content/refs/heads/main/scripts/download_embeddings_model.py
+> python ./download_embeddings_model.py \
+>     -l ./embeddings_model/ \
+>     -r sentence-transformers/all-mpnet-base-v2
+> ```
 
 6. Generate the vector database.
 
