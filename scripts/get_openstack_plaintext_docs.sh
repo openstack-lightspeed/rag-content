@@ -22,6 +22,9 @@ if ! command -v tox &> /dev/null; then
   exit 1
 fi
 
+# The name of the output directory
+OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-docs-plaintext}
+
 # OpenStack Version
 OS_VERSION=${OS_VERSION:-2024.2}
 
@@ -183,7 +186,7 @@ done
 cat_log_files
 
 rm -rf "$CURR_DIR"/openstack-docs-plaintext/*/"${OS_VERSION}"
-cp -r "$WORKING_DIR"/openstack-docs-plaintext "$CURR_DIR"
+cp -r "$WORKING_DIR"/openstack-docs-plaintext "$CURR_DIR/$OUTPUT_DIR_NAME"
 
 # TODO(lucasagomes): Should we delete the working directory ?!
-echo "Done. Documents can be found at $CURR_DIR/openstack-docs-plaintext"
+echo "Done. Documents can be found at $CURR_DIR/$OUTPUT_DIR_NAME"
