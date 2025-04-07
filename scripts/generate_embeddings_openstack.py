@@ -65,7 +65,7 @@ if __name__ == "__main__":
     if not args.folder and not args.rhoso_folder:
         print(
             'Error: Either the "--folder" and/or "--rhoso-folder" options '
-            "must be provided"
+            "must be provided", file=sys.stderr,
         )
         sys.exit(1)
 
