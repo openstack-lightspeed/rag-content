@@ -26,6 +26,17 @@ import xml.etree.ElementTree as ET
 LOG = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
 
+DEFAULT_EXCLUDE_TITLES = [
+    "hardening_red_hat_openstack_services_on_openshift",  # Can't find a published version of this doc for 18+
+    "integrating_openstack_identity_with_external_user_management_services",  # Can't find a published version of this doc for 18+
+    "firewall_rules_for_red_hat_openstack_platform",  # Can't find a published version of this doc for 18+
+    "managing_overcloud_observability",  # Replaced by ./customizing_the_red_hat_openstack_services_on_openshift_deployment/master.txt
+    "network_planning_(sandbox)",  # Content (other than MTU details) included in ./planning_your_deployment/master.txt
+    "managing_secrets_with_the_key_manager_service",  # Replaced by ./performing_security_operations/master.txt
+    "migrating_to_the_ovn_mechanism_driver",  # Content seems out of date for 18+
+    "deploying_red_hat_openstack_platform_at_scale",  # Content is just a stub
+]
+
 
 def get_argument_parser() -> argparse.ArgumentParser:
     """Get ArgumentParser."""
@@ -57,6 +68,14 @@ def get_argument_parser() -> argparse.ArgumentParser:
         required=False,
         type=Path,
     )
+    parser.add_argument(
+        "-e",
+        "--exclude-titles",
+        required=False,
+        type=str,
+        nargs="+",
+        default=DEFAULT_EXCLUDE_TITLES,
+    )
 
     return parser
 
@@ -77,7 +96,7 @@ def get_xml_element_text(root_element: ET.Element, element_name) -> str | None:
 
 
 def red_hat_docs_path(
-    input_dir: Path, output_dir: Path, docs_version: str
+    input_dir: Path, output_dir: Path, docs_version: str, exclude_list: list
 ) -> Generator[Tuple[Path, Path], None, None]:
     """Generate input and output path for asciidoctor based converter
 
@@ -121,6 +140,10 @@ def red_hat_docs_path(
 
             path_title = path_title.lower().replace(" ", "_")
 
+        if path_title in exclude_list:
+            LOG.info(f"{path_title} is in exclude list. Skipping ...")
+            continue
+
         yield Path(file), output_dir / path_title / "master.txt"
 
 
@@ -130,6 +153,6 @@ if __name__ == "__main__":
 
     adoc_text_converter = AsciidoctorConverter(attributes_file=args.attributes_file)
     for input_path, output_path in red_hat_docs_path(
-        args.input_dir, args.output_dir, args.docs_version
+        args.input_dir, args.output_dir, args.docs_version, args.exclude_titles
     ):
         adoc_text_converter.convert(input_path, output_path)
