@@ -4,6 +4,7 @@
 
 import logging
 import os
+import re
 from pathlib import Path
 import sys
 
@@ -14,6 +15,12 @@ from lightspeed_rag_content.document_processor import DocumentProcessor
 logging.basicConfig(
     level=logging.WARNING, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+
+
+def clean_url(unclean_url):
+    unclean_chars = "[()]"
+    clean_url = re.sub(unclean_chars, "", unclean_url)
+    return clean_url
 
 
 class OpenstackDocsMetadataProcessor(MetadataProcessor):
@@ -27,7 +34,7 @@ class OpenstackDocsMetadataProcessor(MetadataProcessor):
         self.base_url = base_url
 
     def url_function(self, file_path):
-        return (
+        return clean_url(
             self.base_url
             + file_path.removeprefix(self._base_path).removesuffix("txt")
             + "html"
@@ -46,7 +53,7 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
         self.version = version
 
     def url_function(self, file_path: str):
-        return (
+        return clean_url(
             self.base_url.format(self.version) + "/" + str(Path(file_path).parent.name)
         )
 
