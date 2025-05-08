@@ -171,7 +171,6 @@ def red_hat_docs_path(
             new_path_title = remap_titles[path_title]
             LOG.info(f"Remapping {path_title} to {new_path_title}.")
             path_title = new_path_title
-            continue
 
         yield Path(file), output_dir / path_title / "master.txt"
 
