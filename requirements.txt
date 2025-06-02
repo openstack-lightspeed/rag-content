@@ -1,2 +1,2 @@
-lightspeed-rag-content @ git+https://github.com/road-core/rag-content@main
+lightspeed-rag-content @ git+https://github.com/ligthspeed-core/rag-content@main
 packaging
