@@ -17,6 +17,7 @@ COPY ./scripts ./scripts
 # python-devel and pcre-devel are needed for python-openstackclient
 RUN dnf install -y graphviz python-devel pcre-devel
 RUN pip install tox
+RUN pip install html2text
 
 RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         ./scripts/get_openstack_plaintext_docs.sh; \
