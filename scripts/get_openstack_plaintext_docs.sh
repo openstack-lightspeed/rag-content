@@ -31,10 +31,11 @@ OS_VERSION=${OS_VERSION:-2024.2}
 # TODO(lucasagomes): Look into adding the "tacker" project. Document generation
 # for this project gets stuck in an infinite loop
 # List of OpenStack Projects
-_OS_PROJECTS="nova horizon keystone neutron cinder manila glance swift ceilometer \
-octavia designate heat placement ironic barbican aodh watcher adjutant blazar \
-cyborg magnum mistral skyline-apiserver skyline-console storlets \
-venus vitrage zun python-openstackclient tempest trove zaqar masakari"
+_OS_PROJECTS="nova horizon keystone neutron neutron-lib cinder manila glance \
+swift ceilometer octavia designate heat placement ironic barbican aodh \
+watcher adjutant blazar cyborg magnum mistral skyline-apiserver \
+skyline-console storlets venus vitrage zun python-openstackclient tempest \
+trove zaqar masakari"
 OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
 
 # List of paths to prune from final docs set. The default set are pages that
@@ -107,6 +108,23 @@ deps =
   -r{toxinidir}/doc/requirements.txt
 "
 
+    # TODO(slaweq) once os-api-ref project will support building api-ref in the
+    # text format, this can be changed here to build it in plain text directly
+    local tox_text_api_ref_target="
+[testenv:text-api-ref]
+description =
+    Build documentation in text format.
+commands =
+  sphinx-build --keep-going -j auto -b html -d api-ref/build/doctrees api-ref/source api-ref/build/html
+deps =
+  -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version}
+  -r{toxinidir}/doc/requirements.txt
+"
+
+    # TODO(slaweq) once os-api-ref project will support building api-ref in the
+    # text format, we can add here tox target similar to the "doc" one above to
+    # build api-ref directly in text format
+
     echo "Generating the plain-text documentation for OpenStack $project"
     # Clone the project's repository, if not present
     if [ ! -d "$project" ]; then
@@ -152,8 +170,40 @@ deps =
         echo "$tox_text_docs_target" >> tox.ini
     fi
 
+    # Additonally check if project has api-ref documentation to build
+    if grep -q "text-api-ref" tox.ini; then
+        echo "The text-api-ref target exists for $project"
+        # Add additional actions here if needed
+    else
+        echo "The text-api-ref target does not exist for $project. Appending it..."
+        echo "$tox_text_api_ref_target" >> tox.ini
+    fi
+
     # Generate the docs in plain-text
-    tox -etext-docs
+    # Documentation build for neutron-lib is broken now, but we need it only
+    # for the Neutron api-ref really so let's skip it for other docs
+    if [ "$project" != "neutron-lib" ]; then
+        tox -etext-docs
+    fi
+    # And the same for api-ref
+    if [ -d "./api-ref/source" ]; then
+        local api_ref_failed="false"
+        tox -etext-api-ref || api_ref_failed="true"
+        if [ "$api_ref_failed" != "true" ]; then
+            # NOTE(slaweq): For now os-api-ref don't support building api-ref in
+            # plain text format, only html is supported so it has to be converted
+            # using some other tool
+            mv ./api-ref/build/html ./api-ref/build/text
+            while read -r html_file; do
+                text_file="${html_file//html/txt}"
+                if [ -e "$html_file" ]; then
+                    html2text "$html_file" utf8 > "$text_file"
+                fi
+            done <<< "$(find ./api-ref/build/text -name "*.html")"
+            find ./api-ref/build/text -type f ! -name "*.txt" -delete
+            find ./api-ref/build/text -depth -type d -empty -delete
+        fi
+    fi
 
     # These projects have all their docs under "latest" instead of "2024.2"
     if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ]; then
@@ -166,7 +216,14 @@ deps =
     local project_output_dir=$WORKING_DIR/openstack-docs-plaintext/$project
     rm -rf "$project_output_dir"
     mkdir -p "$project_output_dir"
-    cp -r doc/build/text "$project_output_dir"/"$_output_version"
+    if [ -d "doc/build/text" ]; then
+        cp -r doc/build/text "$project_output_dir"/"$_output_version"_docs
+    fi
+    if [ -d "./api-ref/source" ]; then
+       if [ "$api_ref_failed" != "true" ]; then
+            cp -r api-ref/build/text "$project_output_dir"/"$_output_version"_api-ref
+       fi
+    fi
 
     # Remove artifacts
     rm -rf "$project_output_dir"/"$_output_version"/{_static/,.doctrees/}
