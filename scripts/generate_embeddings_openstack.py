@@ -76,6 +76,14 @@ if __name__ == "__main__":
         required=False,
         help="Directory containing the plain text RHOSO documentation",
     )
+    parser.add_argument(
+        "-ua",
+        "--unreachable-action",
+        choices=["warn", "drop", "fail"],
+        default="warn",
+        required=False,
+        help="What to do when encountering a doc whose URL can't be reached",
+    )
     args = parser.parse_args()
 
     if not args.folder and not args.rhoso_folder:
@@ -105,6 +113,7 @@ if __name__ == "__main__":
             required_exts=[
                 ".txt",
             ],
+            unreachable_action=args.unreachable_action,
         )
 
     # Process the RHOSO documents, if provided
@@ -115,6 +124,7 @@ if __name__ == "__main__":
             required_exts=[
                 ".txt",
             ],
+            unreachable_action=args.unreachable_action,
         )
 
     # Save to the output directory

@@ -1,5 +1,5 @@
 ARG FLAVOR=cpu
-FROM ghcr.io/road-core/rag-content-${FLAVOR}:latest as road-core-rag-builder
+FROM ghcr.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
 ARG OS_VERSION=2024.2
 ARG INDEX_NAME=os-docs-${OS_VERSION}
 ARG OS_PROJECTS
@@ -43,8 +43,8 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
 
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
-COPY --from=road-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
-COPY --from=road-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
+COPY --from=lightspeed-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
+COPY --from=lightspeed-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
 
 RUN mkdir /licenses
 COPY LICENSE /licenses/
