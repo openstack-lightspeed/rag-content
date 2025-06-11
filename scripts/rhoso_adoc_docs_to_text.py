@@ -54,13 +54,14 @@ def get_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Convert RHOSO AsciiDoc formatted documentation to text format.",
     )
-    parser.add_argument(
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument(
         "-i",
         "--input-dir",
         required=False,
         type=Path,
     )
-    parser.add_argument(
+    input_group.add_argument(
         "-n",
         "--relnotes-dir",
         required=False,
@@ -211,12 +212,6 @@ def red_hat_relnotes_path(
 if __name__ == "__main__":
     parser = get_argument_parser()
     args = parser.parse_args()
-
-    if (args.input_dir is None and args.relnotes_dir is None) or (
-        args.input_dir is not None and args.relnotes_dir is not None
-    ):
-        LOG.error("(Only) one of input_dir or relnotes_dir must be provided")
-        exit(1)
 
     if args.input_dir:
         adoc_text_converter = AsciidoctorConverter(attributes_file=args.attributes_file)
