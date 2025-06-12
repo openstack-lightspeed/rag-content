@@ -5,6 +5,7 @@ OS_VERSION                     ?= 2024.2
 INDEX_NAME                     ?= os-docs-$(OS_VERSION)
 RHOSO_DOCS_GIT_URL             ?= ""
 RHOSO_DOCS_ATTRIBUTES_FILE_URL ?= ""
+RHOSO_RELNOTES_GIT_URL         ?= ""
 OSLS_CONTAINER                 ?= quay.io/openstack-lightspeed/rag-content:latest
 
 # Define behavior based on the flavor
@@ -24,6 +25,7 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg OS_VERSION=$(OS_VERSION) \
 	--build-arg RHOSO_DOCS_GIT_URL=$(RHOSO_DOCS_GIT_URL) \
 	--build-arg RHOSO_DOCS_ATTRIBUTES_FILE_URL=$(RHOSO_DOCS_ATTRIBUTES_FILE_URL) \
+	--build-arg RHOSO_RELNOTES_GIT_URL=$(RHOSO_RELNOTES_GIT_URL) \
 	--build-arg INDEX_NAME=$(INDEX_NAME) .
 
 get-embeddings-model: ## Download embeddings model from the openstack-lightspeed/rag-content container image

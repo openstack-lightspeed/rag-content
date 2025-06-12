@@ -22,6 +22,7 @@ from lightspeed_rag_content.asciidoc import AsciidoctorConverter
 from packaging.version import Version
 from typing import Generator, Tuple
 import xml.etree.ElementTree as ET
+import re
 
 LOG = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
@@ -53,10 +54,17 @@ def get_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Convert RHOSO AsciiDoc formatted documentation to text format.",
     )
-    parser.add_argument(
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument(
         "-i",
         "--input-dir",
-        required=True,
+        required=False,
+        type=Path,
+    )
+    input_group.add_argument(
+        "-n",
+        "--relnotes-dir",
+        required=False,
         type=Path,
     )
     parser.add_argument(
@@ -175,16 +183,52 @@ def red_hat_docs_path(
         yield Path(file), output_dir / path_title / "master.txt"
 
 
+def red_hat_relnotes_path(
+    input_dir: Path, output_dir: Path, docs_version: str
+) -> Generator[Tuple[Path, Path], None, None]:
+    """Generate input and output path for asciidoctor based converter
+
+    Args:
+        input_dir:
+            Directory containing the .adoc formatted files (searched for release-information docs)
+        output_dir:
+            Directory where the converted .adoc file should be stored.
+    """
+    ver_string = docs_version.replace(".", "-")
+    globstring = (
+        f"{ver_string}-[0-9]*/assembly_release-information-{ver_string}-[0-9]*.adoc"
+    )
+    for file in input_dir.rglob(globstring):
+        if match := re.search(f"{ver_string}-\d+/.*-(\d+).adoc", str(file)):
+            minor_ver_string = match.group(1).replace(".", "-")
+            yield (
+                Path(file),
+                output_dir / f"release-notes/{ver_string}-{minor_ver_string}.txt",
+            )
+        else:
+            LOG.warning(f"Failed to detect minor_ver of {file} with regex, skipping.")
+
+
 if __name__ == "__main__":
     parser = get_argument_parser()
     args = parser.parse_args()
 
-    adoc_text_converter = AsciidoctorConverter(attributes_file=args.attributes_file)
-    for input_path, output_path in red_hat_docs_path(
-        args.input_dir,
-        args.output_dir,
-        args.docs_version,
-        args.exclude_titles,
-        args.remap_titles,
-    ):
-        adoc_text_converter.convert(input_path, output_path)
+    if args.input_dir:
+        adoc_text_converter = AsciidoctorConverter(attributes_file=args.attributes_file)
+        for input_path, output_path in red_hat_docs_path(
+            args.input_dir,
+            args.output_dir,
+            args.docs_version,
+            args.exclude_titles,
+            args.remap_titles,
+        ):
+            adoc_text_converter.convert(input_path, output_path)
+
+    if args.relnotes_dir:
+        adoc_text_converter = AsciidoctorConverter()
+        for input_path, output_path in red_hat_relnotes_path(
+            args.relnotes_dir,
+            args.output_dir,
+            args.docs_version,
+        ):
+            adoc_text_converter.convert(input_path, output_path)

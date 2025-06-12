@@ -24,6 +24,10 @@ RHOSO_DOCS_GIT_URL=${RHOSO_DOCS_GIT_URL:-}
 RHOSO_DOCS_ATTRIBUTES_FILE_URL=${RHOSO_DOCS_ATTRIBUTES_FILE_URL:-}
 [ -z "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}" ] && echo "Err: Mising RHOSO_DOCS_ATTRIBUTES_FILE_URL!" && exit 1
 
+# URL of Git repository for RHOSO release notes
+RHOSO_RELNOTES_GIT_URL=${RHOSO_RELNOTES_GIT_URL:-}
+[ -z "${RHOSO_RELNOTES_GIT_URL}" ] && echo "Err: Mising RHOSO_RELNOTES_GIT_URL!" && exit 1
+
 # The name of the output directory
 OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-rhoso-docs-plaintext}
 
@@ -32,12 +36,12 @@ generate_text_docs_rhoso() {
     local rhoso_docs_folder="./rhoso_docs"
     local attributes_file="attributes.yaml"
 
-    # TODO(lpiwowar): Remove GIT_SSL_NO_VERIFY
+    # TODO(lpiwowar): Remove GIT_SSL_NO_VERIFY OSPRH-15290
     if [ ! -d "${rhoso_docs_folder}" ]; then
         GIT_SSL_NO_VERIFY=true git clone "${RHOSO_DOCS_GIT_URL}" "${rhoso_docs_folder}"
     fi
 
-    # TODO(lpiwowar): Remove -k (skips validation of the certificate)
+    # TODO(lpiwowar): Remove -k (skips validation of the certificate) OSPRH-15290
     curl -L -k -o "${attributes_file}" "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}"
 
     for subdir in "${rhoso_docs_folder}/titles" "${rhoso_docs_folder}"/doc-*; do
@@ -48,4 +52,18 @@ generate_text_docs_rhoso() {
     done
 }
 
+generate_relnotes_rhoso() {
+    local rhoso_relnotes_folder="./rhoso_relnotes"
+
+    # TODO(lpiwowar): Remove GIT_SSL_NO_VERIFY OSPRH-15290
+    if [ ! -d "${rhoso_relnotes_folder}" ]; then
+        GIT_SSL_NO_VERIFY=true git clone "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
+    fi
+
+    python ./scripts/rhoso_adoc_docs_to_text.py \
+        --relnotes-dir "${rhoso_relnotes_folder}/manual-content/" \
+        --output-dir "$OUTPUT_DIR_NAME/"
+}
+
 generate_text_docs_rhoso
+generate_relnotes_rhoso

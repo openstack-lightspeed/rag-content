@@ -53,9 +53,18 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
         self.version = version
 
     def url_function(self, file_path: str):
-        return clean_url(
-            self.base_url.format(self.version) + "/" + str(Path(file_path).parent.name)
-        )
+        if "release-notes" in file_path:
+            return clean_url(
+                self.base_url.format(self.version)
+                + "/release_notes/index#chap-release-info_release-info-top-"
+                + os.path.basename(file_path).rstrip(".txt")
+            )
+        else:
+            return clean_url(
+                self.base_url.format(self.version)
+                + "/"
+                + str(Path(file_path).parent.name)
+            )
 
 
 if __name__ == "__main__":
