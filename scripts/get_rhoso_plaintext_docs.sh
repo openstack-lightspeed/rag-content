@@ -28,21 +28,41 @@ RHOSO_DOCS_ATTRIBUTES_FILE_URL=${RHOSO_DOCS_ATTRIBUTES_FILE_URL:-}
 RHOSO_RELNOTES_GIT_URL=${RHOSO_RELNOTES_GIT_URL:-}
 [ -z "${RHOSO_RELNOTES_GIT_URL}" ] && echo "Err: Mising RHOSO_RELNOTES_GIT_URL!" && exit 1
 
+# Optional URL to download CA certificate for RHOSO Git repositories
+RHOSO_CA_CERT_URL=${RHOSO_CA_CERT_URL:-}
+
 # The name of the output directory
 OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-rhoso-docs-plaintext}
+
+# Download CA certificate if URL is provided
+CA_CERT_FILE=""
+if [ -n "${RHOSO_CA_CERT_URL}" ]; then
+    CA_CERT_FILE="ca.pem"
+    echo "Downloading CA certificate from ${RHOSO_CA_CERT_URL}"
+    curl -o "${CA_CERT_FILE}" "${RHOSO_CA_CERT_URL}"
+fi
+
+# Configure git and curl commands with CA certificate if available
+if [ -f "${CA_CERT_FILE}" ]; then
+    echo "Git and curl will use CA certificate from ${RHOSO_CA_CERT_URL}"
+    git_clone() { git -c http.sslCAInfo="${CA_CERT_FILE}" clone "$@"; }
+    curl_download() { curl -L --cacert "${CA_CERT_FILE}" "$@"; }
+else
+    echo "Warning: No CA certificate provided, skipping certificate validation"
+    git_clone() { GIT_SSL_NO_VERIFY=true git clone "$@"; }
+    curl_download() { curl -L -k "$@"; }
+fi
 
 # Clone RHOSO documentation and generate vector database for it
 generate_text_docs_rhoso() {
     local rhoso_docs_folder="./rhoso_docs"
     local attributes_file="attributes.yaml"
 
-    # TODO(lpiwowar): Remove GIT_SSL_NO_VERIFY OSPRH-15290
     if [ ! -d "${rhoso_docs_folder}" ]; then
-        GIT_SSL_NO_VERIFY=true git clone "${RHOSO_DOCS_GIT_URL}" "${rhoso_docs_folder}"
+        git_clone "${RHOSO_DOCS_GIT_URL}" "${rhoso_docs_folder}"
     fi
 
-    # TODO(lpiwowar): Remove -k (skips validation of the certificate) OSPRH-15290
-    curl -L -k -o "${attributes_file}" "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}"
+    curl_download -o "${attributes_file}" "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}"
 
     for subdir in "${rhoso_docs_folder}/titles" "${rhoso_docs_folder}"/doc-*; do
         python ./scripts/rhoso_adoc_docs_to_text.py \
@@ -55,9 +75,8 @@ generate_text_docs_rhoso() {
 generate_relnotes_rhoso() {
     local rhoso_relnotes_folder="./rhoso_relnotes"
 
-    # TODO(lpiwowar): Remove GIT_SSL_NO_VERIFY OSPRH-15290
     if [ ! -d "${rhoso_relnotes_folder}" ]; then
-        GIT_SSL_NO_VERIFY=true git clone "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
+        git_clone "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
     fi
 
     python ./scripts/rhoso_adoc_docs_to_text.py \
