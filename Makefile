@@ -6,6 +6,7 @@ INDEX_NAME                     ?= os-docs-$(OS_VERSION)
 RHOSO_DOCS_GIT_URL             ?= ""
 RHOSO_DOCS_ATTRIBUTES_FILE_URL ?= ""
 RHOSO_RELNOTES_GIT_URL         ?= ""
+RHOSO_RELNOTES_GIT_BRANCH      ?= ""
 RHOSO_CA_CERT_URL              ?= ""
 OSLS_CONTAINER                 ?= quay.io/openstack-lightspeed/rag-content:latest
 
@@ -27,6 +28,7 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg RHOSO_DOCS_GIT_URL=$(RHOSO_DOCS_GIT_URL) \
 	--build-arg RHOSO_DOCS_ATTRIBUTES_FILE_URL=$(RHOSO_DOCS_ATTRIBUTES_FILE_URL) \
 	--build-arg RHOSO_RELNOTES_GIT_URL=$(RHOSO_RELNOTES_GIT_URL) \
+	--build-arg RHOSO_RELNOTES_GIT_BRANCH=$(RHOSO_RELNOTES_GIT_BRANCH) \
 	--build-arg RHOSO_CA_CERT_URL=$(RHOSO_CA_CERT_URL) \
 	--build-arg INDEX_NAME=$(INDEX_NAME) .
 

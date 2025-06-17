@@ -28,6 +28,9 @@ RHOSO_DOCS_ATTRIBUTES_FILE_URL=${RHOSO_DOCS_ATTRIBUTES_FILE_URL:-}
 RHOSO_RELNOTES_GIT_URL=${RHOSO_RELNOTES_GIT_URL:-}
 [ -z "${RHOSO_RELNOTES_GIT_URL}" ] && echo "Err: Mising RHOSO_RELNOTES_GIT_URL!" && exit 1
 
+# Branch to checkout for RHOSO release notes
+RHOSO_RELNOTES_GIT_BRANCH=${RHOSO_RELNOTES_GIT_BRANCH:-main-external}
+
 # Optional URL to download CA certificate for RHOSO Git repositories
 RHOSO_CA_CERT_URL=${RHOSO_CA_CERT_URL:-}
 
@@ -76,7 +79,7 @@ generate_relnotes_rhoso() {
     local rhoso_relnotes_folder="./rhoso_relnotes"
 
     if [ ! -d "${rhoso_relnotes_folder}" ]; then
-        git_clone "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
+        git_clone --single-branch -b "${RHOSO_RELNOTES_GIT_BRANCH}" "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
     fi
 
     python ./scripts/rhoso_adoc_docs_to_text.py \
