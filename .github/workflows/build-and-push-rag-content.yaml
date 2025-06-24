@@ -20,6 +20,7 @@ on:
 
 env:
   IMAGE_NAME: quay.io/openstack-lightspeed/${{ github.event.repository.name }}
+  OS_VERSION: 2024.2
 
 jobs:
   build-and-push-rag-content:
@@ -46,9 +47,15 @@ jobs:
       - name: Build image
         id: build_image
         uses: redhat-actions/buildah-build@v2
+        env:
+          # This variable should be used to specify the tag for the vector DB
+          # container image and the name of the index ID for the data inside
+          # that image. The idea is to make the image tag equal to the index ID
+          # used inside, so it's easy to understand what index ID is within that image.
+          INDEX_NAME: os-docs-${{ env.OS_VERSION }}
         with:
           image: ${{ github.event.repository.name }}
-          tags: latest ${{ github.sha }}
+          tags: ${{ github.sha }} ${{ env.INDEX_NAME }}
           oci: true
           # We are using FLAVOR=cpu because Github runners do not offer GPUs and
           # NUM_WORKERS is set to 4 because that's the default number of cores
@@ -57,6 +64,8 @@ jobs:
             FLAVOR=cpu
             NUM_WORKERS=4
             OS_PROJECTS=${{ env.OS_PROJECTS }}
+            OS_VERSION=${{ env.OS_VERSION }}
+            INDEX_NAME=${{ env.INDEX_NAME }}
           context: .
           containerfiles: |
             ./Containerfile

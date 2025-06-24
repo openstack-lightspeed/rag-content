@@ -49,6 +49,9 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=lightspeed-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
 COPY --from=lightspeed-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
 
+ARG INDEX_NAME
+ENV INDEX_NAME=${INDEX_NAME}
+
 RUN mkdir /licenses
 COPY LICENSE /licenses/
 
