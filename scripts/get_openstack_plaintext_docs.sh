@@ -64,7 +64,7 @@ fi
 IFS=' ' read -r -a os_projects <<< "$OS_PROJECTS"
 
 # Working directory
-WORKING_DIR="/tmp/os_docs_temp"
+WORKING_DIR="${WORKING_DIR:-/tmp/os_docs_temp}"
 
 # The current directory where the script was invoked
 CURR_DIR=$(pwd)
