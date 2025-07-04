@@ -16,9 +16,17 @@
 
 set -eou pipefail
 
+PYTHON_VERSION=${PYTHON_VERSION:-3.11}
+PYTHON="python${PYTHON_VERSION}"
+
 # Check if 'tox' is available
 if ! command -v tox &> /dev/null; then
   echo "Error: 'tox' is not installed, please install it before continuing." >&2
+  exit 1
+fi
+
+if ! command -v "$PYTHON"  &> /dev/null; then
+  echo "Error: '$PYTHON' is not installed, please install it before continuing." >&2
   exit 1
 fi
 
@@ -101,6 +109,7 @@ generate_text_doc() {
 [testenv:text-docs]
 description =
     Build documentation in text format.
+basepython = $PYTHON
 commands =
   sphinx-build --keep-going -j auto -b text doc/source doc/build/text
 deps =
@@ -114,6 +123,7 @@ deps =
 [testenv:text-api-ref]
 description =
     Build documentation in text format.
+basepython = $PYTHON
 commands =
   sphinx-build --keep-going -j auto -b html -d api-ref/build/doctrees api-ref/source api-ref/build/html
 deps =
@@ -232,8 +242,8 @@ deps =
     cd -
 }
 
-mkdir -p $WORKING_DIR
-cd $WORKING_DIR
+mkdir -p "$WORKING_DIR"
+cd "$WORKING_DIR"
 echo "Working directory: $WORKING_DIR"
 
 for os_project in "${os_projects[@]}"; do
