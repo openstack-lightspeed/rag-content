@@ -34,6 +34,11 @@ pip install -r requirements.txt
 ./scripts/get_openstack_plaintext_docs.sh
 ```
 
+   Useful env vars for this script:
+   - `CLEAN_FILES` what to clean on success: `venv`, `all` (whole project), or nothing (default).
+   - `NUM_WORKERS` if the default number (`nproc`) is too high
+   - `WORKING_DIR` if you don't want to use the default `/tmp/os_docs_temp`.
+
 5. Download the embedding model.
 
 ```

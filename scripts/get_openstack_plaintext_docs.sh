@@ -16,9 +16,17 @@
 
 set -eou pipefail
 
+PYTHON_VERSION=${PYTHON_VERSION:-3.11}
+PYTHON="python${PYTHON_VERSION}"
+
 # Check if 'tox' is available
 if ! command -v tox &> /dev/null; then
   echo "Error: 'tox' is not installed, please install it before continuing." >&2
+  exit 1
+fi
+
+if ! command -v "$PYTHON"  &> /dev/null; then
+  echo "Error: '$PYTHON' is not installed, please install it before continuing." >&2
   exit 1
 fi
 
@@ -56,7 +64,11 @@ fi
 IFS=' ' read -r -a os_projects <<< "$OS_PROJECTS"
 
 # Working directory
-WORKING_DIR="/tmp/os_docs_temp"
+WORKING_DIR="${WORKING_DIR:-/tmp/os_docs_temp}"
+
+# Whether to delete files on success or not.
+# Acceptable values are "all", "venv", in other cases they are not deleted
+CLEAN_FILES="${CLEAN_FILES:-}"
 
 # The current directory where the script was invoked
 CURR_DIR=$(pwd)
@@ -101,6 +113,7 @@ generate_text_doc() {
 [testenv:text-docs]
 description =
     Build documentation in text format.
+basepython = $PYTHON
 commands =
   sphinx-build --keep-going -j auto -b text doc/source doc/build/text
 deps =
@@ -114,6 +127,7 @@ deps =
 [testenv:text-api-ref]
 description =
     Build documentation in text format.
+basepython = $PYTHON
 commands =
   sphinx-build --keep-going -j auto -b html -d api-ref/build/doctrees api-ref/source api-ref/build/html
 deps =
@@ -184,12 +198,15 @@ deps =
     # for the Neutron api-ref really so let's skip it for other docs
     if [ "$project" != "neutron-lib" ]; then
         tox -etext-docs
+        [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-docs
+
     fi
     # And the same for api-ref
     if [ -d "./api-ref/source" ]; then
         local api_ref_failed="false"
         tox -etext-api-ref || api_ref_failed="true"
         if [ "$api_ref_failed" != "true" ]; then
+            [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-api-ref
             # NOTE(slaweq): For now os-api-ref don't support building api-ref in
             # plain text format, only html is supported so it has to be converted
             # using some other tool
@@ -225,15 +242,16 @@ deps =
        fi
     fi
 
-    # Remove artifacts
-    rm -rf "$project_output_dir"/"$_output_version"/{_static/,.doctrees/}
-
     # Exit project's directory
     cd -
+
+    # Remove artifacts
+    [ "${CLEAN_FILES}" == "all" ] && rm -rf "$project"
+    rm -rf "$project_output_dir"/"$_output_version"/{_static/,.doctrees/}
 }
 
-mkdir -p $WORKING_DIR
-cd $WORKING_DIR
+mkdir -p "$WORKING_DIR"
+cd "$WORKING_DIR"
 echo "Working directory: $WORKING_DIR"
 
 for os_project in "${os_projects[@]}"; do
