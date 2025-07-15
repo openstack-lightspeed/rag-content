@@ -1,15 +1,13 @@
 ARG FLAVOR=cpu
-FROM ghcr.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
-ARG OS_VERSION=2024.2
-ARG INDEX_NAME=os-docs-${OS_VERSION}
-ARG OS_PROJECTS
-ARG NUM_WORKERS=1
-ARG RHOSO_DOCS_GIT_URL=""
-ARG RHOSO_DOCS_ATTRIBUTES_FILE_URL=""
-ARG RHOSO_RELNOTES_GIT_URL=""
-ARG RHOSO_RELNOTES_GIT_BRANCH=""
-ARG RHOSO_CA_CERT_URL=""
+
+# -- Stage 1: Generate plaintext formatted documentation ----------------------
+FROM registry.access.redhat.com/ubi9/python-311 as docs-base
+
 ARG BUILD_UPSTREAM_DOCS=true
+ARG NUM_WORKERS=1
+ARG OS_PROJECTS
+ARG OS_VERSION=2024.2
+ARG RHOSO_CA_CERT_URL=""
 
 USER 0
 WORKDIR /rag-content
@@ -30,6 +28,22 @@ RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         ./scripts/get_rhoso_plaintext_docs.sh; \
     fi
 
+# -- Stage 2: Compute embeddings for the doc chunks ---------------------------
+FROM ghcr.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
+COPY --from=docs-base /rag-content/openstack-docs-plaintext /rag-content/openstack-docs-plaintext
+COPY --from=docs-base /rag-content/scripts /rag-content/scripts
+
+ARG BUILD_UPSTREAM_DOCS=true
+ARG OS_VERSION=2024.2
+ARG INDEX_NAME=os-docs-${OS_VERSION}
+ARG NUM_WORKERS=1
+ARG RHOSO_DOCS_GIT_URL=""
+ARG RHOSO_DOCS_ATTRIBUTES_FILE_URL=""
+ARG RHOSO_RELNOTES_GIT_BRANCH=""
+ARG RHOSO_RELNOTES_GIT_URL=""
+
+WORKDIR /rag-content
+
 RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         FOLDER_ARG="--folder openstack-docs-plaintext"; \
     fi && \
@@ -44,7 +58,7 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
     --workers ${NUM_WORKERS} \
     ${FOLDER_ARG}
 
-
+# -- Stage 3: Store the vector DB into ubi-minimal image ----------------------
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=lightspeed-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
 COPY --from=lightspeed-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
