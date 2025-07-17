@@ -33,6 +33,7 @@ COPY --from=docs-base /rag-content/openstack-docs-plaintext /rag-content/opensta
 COPY --from=docs-base /rag-content/scripts /rag-content/scripts
 
 ARG BUILD_UPSTREAM_DOCS=true
+ARG DOCS_LINK_UNREACHABLE_ACTION=warn
 ARG OS_VERSION=2024.2
 ARG INDEX_NAME=os-docs-${OS_VERSION}
 ARG NUM_WORKERS=1
@@ -55,6 +56,7 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
     --model-name ${EMBEDDING_MODEL} \
     --index ${INDEX_NAME} \
     --workers ${NUM_WORKERS} \
+    --unreachable-action ${DOCS_LINK_UNREACHABLE_ACTION} \
     ${FOLDER_ARG}
 
 # -- Stage 3: Store the vector DB into ubi-minimal image ----------------------

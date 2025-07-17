@@ -66,6 +66,7 @@ jobs:
             OS_PROJECTS=${{ env.OS_PROJECTS }}
             OS_VERSION=${{ env.OS_VERSION }}
             INDEX_NAME=${{ env.INDEX_NAME }}
+            DOCS_LINK_UNREACHABLE_ACTION=fail
           context: .
           containerfiles: |
             ./Containerfile
