@@ -103,6 +103,7 @@ if __name__ == "__main__":
         args.workers,
         args.vector_store_type,
         args.index.replace("-", "_"),
+        manual_chunking=args.manual_chunking,
     )
 
     # Process the OpenStack documents, if provided
