@@ -14,12 +14,12 @@ There are several ways how to access the OpenStack vector database:
 
 ## Generate OpenStack Vector Database
 
-1. Install requirements: `python3.11.*`.
+1. Install requirements: `python3.12.*`.
 
 2. Create virtualenv.
 
 ```
-python3.11 -m venv .venv && . .venv/bin/activate
+python3.12 -m venv .venv && . .venv/bin/activate
 ```
 
 3. Install dependencies.
@@ -59,6 +59,8 @@ make get-embeddings-model
 
 6. Generate the vector database.
 
+- For llama-index
+
 ```
 python ./scripts/generate_embeddings_openstack.py \
         -o ./vector_db/ \
@@ -69,7 +71,27 @@ python ./scripts/generate_embeddings_openstack.py \
         -w $(( $(nproc --all) / 2 ))
 ```
 
-7. Use the vector database stored in `./vector_db`.
+- For llama-stack
+
+```
+python ./scripts/generate_embeddings_openstack.py \
+        -o ./vector_db/ \
+        -f openstack-docs-plaintext/ \
+        -md embeddings_model \
+        -mn sentence-transformers/all-mpnet-base-v2 \
+        -i os-docs \
+        --vector-store-type=llamastack-faiss \
+        -w $(( $(nproc --all) / 2 ))
+```
+
+7. Test the database stored in `./vector_db`
+
+```bash
+curl -o /tmp/query_rag.py https://raw.githubusercontent.com/lightspeed-core/rag-content/refs/heads/main/scripts/query_rag.py
+python /tmp/query_rag.py -p vector_db -x os-docs -m embeddings_model -k 5 -q "how can I configure a cinder backend"
+```
+
+8. Use the vector database stored in `./vector_db`.
 
 
 ## Build Container Image Containing OpenStack Vector Database

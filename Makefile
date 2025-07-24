@@ -15,6 +15,7 @@ OSLS_CONTAINER                 ?= quay.io/openstack-lightspeed/rag-content:lates
 BUILD_UPSTREAM_DOCS            ?= true
 DOCS_LINK_UNREACHABLE_ACTION   ?= warn
 BUILD_EXTRA_ARGS               ?=
+VECTOR_DB_TYPE                 ?= faiss
 
 # Define behavior based on the flavor
 ifeq ($(FLAVOR),cpu)
@@ -43,6 +44,7 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg BUILD_UPSTREAM_DOCS=$(BUILD_UPSTREAM_DOCS) \
 	--build-arg DOCS_LINK_UNREACHABLE_ACTION=$(DOCS_LINK_UNREACHABLE_ACTION) \
 	--build-arg INDEX_NAME=$(INDEX_NAME) \
+	--build-arg VECTOR_DB_TYPE=$(VECTOR_DB_TYPE) \
 	$(BUILD_GPU_ARGS) .
 
 get-embeddings-model: ## Download embeddings model from the openstack-lightspeed/rag-content container image

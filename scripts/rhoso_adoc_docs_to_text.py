@@ -1,4 +1,4 @@
-#!/usr/bin/python3.11
+#!/usr/bin/python3.12
 # Copyright 2025 Red Hat, Inc.
 # All Rights Reserved.
 #
