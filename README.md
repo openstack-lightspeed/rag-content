@@ -82,6 +82,20 @@ python ./scripts/generate_embeddings_openstack.py \
 make build-image-os FLAVOR=cpu
 ```
 
+If we have an Nvidia GPU card properly configured in podman we can run:
+
+```bash
+make build-image-os FLAVOR=gpu
+```
+
+If our GPU is not an Nvidia card and is supported by podman and torch, then we
+can override the default value in `BUILD_GPU_ARGS` (here we show de default
+value):
+
+```bash
+make build-image-os FLAVOR=gpu BUILD_GPU_ARGS="--device nvidia.com/gpu=all"
+```
+
 3. The generated vector database can be found under `/rag/vector_db/os_product_docs`
 inside of the image.
 
