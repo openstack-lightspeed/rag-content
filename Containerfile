@@ -54,6 +54,7 @@ ARG OS_VERSION=2024.2
 ARG INDEX_NAME=os-docs-${OS_VERSION}
 ARG NUM_WORKERS=1
 ARG RHOSO_DOCS_GIT_URL=""
+ARG VECTOR_DB_TYPE="faiss"
 
 
 WORKDIR /rag-content
@@ -74,6 +75,7 @@ RUN if [ "$FLAVOR" = "gpu" ]; then \
     --index ${INDEX_NAME} \
     --workers ${NUM_WORKERS} \
     --unreachable-action ${DOCS_LINK_UNREACHABLE_ACTION} \
+    --vector-store-type $VECTOR_DB_TYPE \
     ${FOLDER_ARG}
 
 # -- Stage 3: Store the vector DB into ubi-minimal image ----------------------
