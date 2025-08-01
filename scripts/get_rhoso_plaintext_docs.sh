@@ -48,11 +48,11 @@ fi
 # Configure git and curl commands with CA certificate if available
 if [ -f "${CA_CERT_FILE}" ]; then
     echo "Git and curl will use CA certificate from ${RHOSO_CA_CERT_URL}"
-    git_clone() { git -c http.sslCAInfo="${CA_CERT_FILE}" clone "$@"; }
+    git_clone() { git -c http.sslCAInfo="${CA_CERT_FILE}" clone -v --depth=1 --single-branch "$@"; }
     curl_download() { curl -L --cacert "${CA_CERT_FILE}" "$@"; }
 else
     echo "Warning: No CA certificate provided, skipping certificate validation"
-    git_clone() { GIT_SSL_NO_VERIFY=true git clone "$@"; }
+    git_clone() { GIT_SSL_NO_VERIFY=true git clone -v --depth=1 --single-branch "$@"; }
     curl_download() { curl -L -k "$@"; }
 fi
 
@@ -79,7 +79,7 @@ generate_relnotes_rhoso() {
     local rhoso_relnotes_folder="./rhoso_relnotes"
 
     if [ ! -d "${rhoso_relnotes_folder}" ]; then
-        git_clone --single-branch -b "${RHOSO_RELNOTES_GIT_BRANCH}" "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
+        git_clone -b "${RHOSO_RELNOTES_GIT_BRANCH}" "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
     fi
 
     python ./scripts/rhoso_adoc_docs_to_text.py \

@@ -125,7 +125,7 @@ deps =
     echo "Generating the plain-text documentation for OpenStack $project"
     # Clone the project's repository, if not present
     if [ ! -d "$project" ]; then
-        git clone https://opendev.org/openstack/"$project".git
+        git clone -v --depth=1 --single-branch -b "stable/${_os_version}" https://opendev.org/openstack/"$project".git
     fi
 
     cd "$project"
