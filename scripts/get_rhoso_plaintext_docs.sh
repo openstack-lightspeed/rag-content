@@ -15,6 +15,7 @@
 # under the License.
 
 set -eou pipefail
+set -x
 
 # URL of Git repository storing RHOSO documentation
 RHOSO_DOCS_GIT_URL=${RHOSO_DOCS_GIT_URL:-}
