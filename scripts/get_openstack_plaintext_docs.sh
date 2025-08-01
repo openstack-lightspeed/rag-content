@@ -15,6 +15,7 @@
 # under the License.
 
 set -eou pipefail
+set -x
 
 PYTHON_VERSION=${PYTHON_VERSION:-3.12}
 PYTHON="python${PYTHON_VERSION}"
