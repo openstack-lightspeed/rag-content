@@ -15,6 +15,7 @@
 # under the License.
 
 set -eou pipefail
+set -x
 
 PYTHON_VERSION=${PYTHON_VERSION:-3.12}
 PYTHON="python${PYTHON_VERSION}"
@@ -124,15 +125,15 @@ deps =
 
     echo "Generating the plain-text documentation for OpenStack $project"
     # Clone the project's repository, if not present
+    if [ "$_os_version" != "master" ]; then
+        branch_prefix="stable/"
+    fi
+
     if [ ! -d "$project" ]; then
-        git clone https://opendev.org/openstack/"$project".git
+        git clone -v --depth=1 --single-branch -b "${branch_prefix}${_os_version}" https://opendev.org/openstack/"$project".git
     fi
 
     cd "$project"
-    if [ "$_os_version" != "master" ]; then
-        git switch stable/"$_os_version"
-        git pull origin stable/"$_os_version"
-    fi
 
     # TODO(lpiwowar): Remove workarounds. Some of the documentations do not work with
     # the feature of sphinx-build that allows generation of the docs in text format.
