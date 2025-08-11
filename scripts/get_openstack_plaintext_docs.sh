@@ -124,7 +124,9 @@ deps =
 "
 
     echo "Generating the plain-text documentation for OpenStack $project"
+
     # Clone the project's repository, if not present
+    local branch_prefix=""
     if [ "$_os_version" != "master" ]; then
         branch_prefix="stable/"
     fi
