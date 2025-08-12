@@ -34,15 +34,28 @@ class OpenstackDocsMetadataProcessor(MetadataProcessor):
         self.base_url = base_url
 
     def url_function(self, file_path):
-        return clean_url(
-            self.base_url
-            + file_path.removeprefix(self._base_path).removesuffix("txt")
-            + "html"
-        )
+        relative_path = file_path.removeprefix(self._base_path)
+        
+        if relative_path.startswith("/"):
+            relative_path = relative_path[1:]
+        
+        if relative_path.startswith("openstack-docs-plaintext/"):
+            relative_path = relative_path.removeprefix("openstack-docs-plaintext/")
+        
+        if relative_path.endswith(".txt"):
+            relative_path = relative_path.removesuffix(".txt") + ".html"
+        
+        final_url = f"{self.base_url}/{relative_path}"
+        
+        return clean_url(final_url)
 
 
 class RedHatDocsMetadataProcessor(MetadataProcessor):
     ROOT_URL = "https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/{}/html-single"
+    
+    DOC_MAPPINGS = {
+        "installing_openstack_services_on_openshift": "deploying_red_hat_openstack_services_on_openshift"
+    }
 
     def __init__(self, docs_path, base_url=ROOT_URL, version="18.0"):
         super(RedHatDocsMetadataProcessor, self).__init__()
@@ -59,12 +72,17 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
                 + "/release_notes/index#chap-release-info_release-info-top-"
                 + os.path.basename(file_path).rstrip(".txt")
             )
-        else:
-            return clean_url(
-                self.base_url.format(self.version)
-                + "/"
-                + str(Path(file_path).parent.name)
-            )
+        
+        doc_name = str(Path(file_path).parent.name)
+        # Apply document mapping if needed
+        doc_name = self.DOC_MAPPINGS.get(doc_name, doc_name)
+        
+        return clean_url(
+            self.base_url.format(self.version)
+            + "/"
+            + doc_name
+            + "/index.html"
+        )
 
 
 if __name__ == "__main__":
