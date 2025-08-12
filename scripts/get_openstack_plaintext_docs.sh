@@ -105,8 +105,9 @@ log_and_die() {
 # Clone repository from OpenDev and generate documentation in text format.
 # Arguments:
 #   $1 - Name of the OpenDev repository
+#   $2 - Project version
 # Usage:
-#   generate_text_doc "nova"
+#   generate_text_doc "nova" "2024.2"
 generate_text_doc() {
     local project=$1
     local _os_version=$2
@@ -178,7 +179,7 @@ deps =
     if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ]; then
         _output_version="latest"
     else
-        _output_version="${OS_VERSION}"
+        _output_version="${_os_version}"
     fi
 
     # Copy documentation to project's output directory
