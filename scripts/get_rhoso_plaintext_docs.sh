@@ -21,6 +21,9 @@ set -x
 RHOSO_DOCS_GIT_URL=${RHOSO_DOCS_GIT_URL:-}
 [ -z "${RHOSO_DOCS_GIT_URL}" ] && echo "Err: Mising RHOSO_DOCS_GIT_URL!" && exit 1
 
+# Branch to checkout for RHOSO documentation repository
+RHOSO_DOCS_GIT_BRANCH=${RHOSO_DOCS_GIT_BRANCH:-rhoso180-antelope}
+
 # URL YAML file which containes RHOSO docs attributes.
 RHOSO_DOCS_ATTRIBUTES_FILE_URL=${RHOSO_DOCS_ATTRIBUTES_FILE_URL:-}
 [ -z "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}" ] && echo "Err: Mising RHOSO_DOCS_ATTRIBUTES_FILE_URL!" && exit 1
@@ -63,7 +66,7 @@ generate_text_docs_rhoso() {
     local attributes_file="attributes.yaml"
 
     if [ ! -d "${rhoso_docs_folder}" ]; then
-        git_clone "${RHOSO_DOCS_GIT_URL}" "${rhoso_docs_folder}"
+        git_clone -b "${RHOSO_DOCS_GIT_BRANCH}" "${RHOSO_DOCS_GIT_URL}" "${rhoso_docs_folder}"
     fi
 
     curl_download -o "${attributes_file}" "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}"
