@@ -36,6 +36,8 @@ ARG RHOSO_DOCS_GIT_URL=""
 ARG RHOSO_DOCS_ATTRIBUTES_FILE_URL=""
 ARG RHOSO_RELNOTES_GIT_URL=""
 ARG RHOSO_RELNOTES_GIT_BRANCH=""
+ARG OKP_FOLDER=""
+ARG OKP_CONTENT="all"
 
 ENV NUM_WORKERS=$NUM_WORKERS
 ENV RHOSO_CA_CERT_URL=$RHOSO_CA_CERT_URL
@@ -43,6 +45,8 @@ ENV RHOSO_DOCS_GIT_URL=$RHOSO_DOCS_GIT_URL
 ENV RHOSO_DOCS_ATTRIBUTES_FILE_URL=$RHOSO_DOCS_ATTRIBUTES_FILE_URL
 ENV RHOSO_RELNOTES_GIT_URL=$RHOSO_RELNOTES_GIT_URL
 ENV RHOSO_RELNOTES_GIT_BRANCH=$RHOSO_RELNOTES_GIT_BRANCH
+ENV OKP_FOLDER=$OKP_FOLDER
+ENV OKP_CONTENT=$OKP_CONTENT
 
 USER 0
 WORKDIR /rag-content
@@ -71,7 +75,6 @@ ARG NUM_WORKERS=1
 ARG RHOSO_DOCS_GIT_URL=""
 ARG VECTOR_DB_TYPE="faiss"
 
-
 WORKDIR /rag-content
 
 RUN if [ "$FLAVOR" = "gpu" ]; then \
@@ -83,6 +86,9 @@ RUN if [ "$FLAVOR" = "gpu" ]; then \
     if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         FOLDER_ARG="$FOLDER_ARG --rhoso-folder rhoso-docs-plaintext"; \
     fi && \
+    if [ ! -z "${OKP_FOLDER}" ]; then \
+        FOLDER_ARG="$FOLDER_ARG --okp-folder ${OKP_FOLDER} --okp-content ${OKP_CONTENT}"; \
+    fi && \
     python ./scripts/generate_embeddings_openstack.py \
     --output ./vector_db/ \
     --model-dir embeddings_model \
@@ -91,6 +97,7 @@ RUN if [ "$FLAVOR" = "gpu" ]; then \
     --workers ${NUM_WORKERS} \
     --unreachable-action ${DOCS_LINK_UNREACHABLE_ACTION} \
     --vector-store-type $VECTOR_DB_TYPE \
+    --openstack-version ${OS_VERSION} \
     ${FOLDER_ARG}
 
 # -- Stage 3: Store the vector DB into ubi-minimal image ----------------------
