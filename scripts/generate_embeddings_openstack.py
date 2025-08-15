@@ -53,6 +53,11 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
         self.version = version
 
     def url_function(self, file_path: str):
+        # Document name mappings for cases where internal document names
+        # differ from published URL paths in Red Hat documentation
+        doc_mappings = {
+            "installing_openstack_services_on_openshift": "deploying_red_hat_openstack_services_on_openshift"
+        }
         if "release-notes" in file_path:
             return clean_url(
                 self.base_url.format(self.version)
@@ -60,10 +65,13 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
                 + os.path.basename(file_path).rstrip(".txt")
             )
         else:
+            doc_name = str(Path(file_path).parent.name)
+            # Apply document name mapping if needed
+            if doc_name in doc_mappings:
+                doc_name = doc_mappings[doc_name]
+
             return clean_url(
-                self.base_url.format(self.version)
-                + "/"
-                + str(Path(file_path).parent.name)
+                self.base_url.format(self.version) + "/" + doc_name + "/index.html"
             )
 
 
