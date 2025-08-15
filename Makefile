@@ -17,6 +17,8 @@ BUILD_UPSTREAM_DOCS            ?= true
 DOCS_LINK_UNREACHABLE_ACTION   ?= warn
 BUILD_EXTRA_ARGS               ?=
 VECTOR_DB_TYPE                 ?= faiss
+BUILD_OKP_CONTENT              ?= false
+OKP_CONTENT                    ?= "all"
 
 # Define behavior based on the flavor
 ifeq ($(FLAVOR),cpu)
@@ -47,6 +49,8 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg DOCS_LINK_UNREACHABLE_ACTION=$(DOCS_LINK_UNREACHABLE_ACTION) \
 	--build-arg INDEX_NAME=$(INDEX_NAME) \
 	--build-arg VECTOR_DB_TYPE=$(VECTOR_DB_TYPE) \
+	--build-arg BUILD_OKP_CONTENT=$(BUILD_OKP_CONTENT) \
+	--build-arg OKP_CONTENT=$(OKP_CONTENT) \
 	$(BUILD_GPU_ARGS) .
 
 get-embeddings-model: ## Download embeddings model from the openstack-lightspeed/rag-content container image
