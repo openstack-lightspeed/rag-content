@@ -125,6 +125,29 @@ inside of the image.
 podman run localhost/rag-content-openstack:latest ls /rag/vector_db/os_product_docs
 ```
 
+## Build with OKP content
+
+To include OKP content in the RAG, copy the non-paywalled OKP content into
+the `okp-content` directory of this project, for example:
+
+```bash
+cp -r red_hat_content/{documentation,errata,pages} okp-content/
+```
+
+Next, set `BUILD_OKP_CONTENT` to true when building the container image,
+for example:
+
+```bash
+make build-image-os BUILD_OKP_CONTENT="true"
+```
+
+By default, all content in the folder will be ingested. To choose specific
+items to include in the RAG, use the `OKP_CONTENT` parameter with a
+space-separated list of content, for example:
+
+```bash
+make build-image-os BUILD_OKP_CONTENT="true" OKP_CONTENT="pages documentation"
+```
 
 ## Download the Pre-built Container Image Containing OpenStack Vector Database
 
