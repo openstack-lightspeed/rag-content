@@ -44,7 +44,7 @@ _OS_PROJECTS="nova horizon keystone neutron cinder manila glance swift ceilomete
 octavia designate heat placement ironic barbican aodh watcher adjutant blazar \
 cyborg magnum mistral skyline-apiserver skyline-console storlets \
 venus vitrage zun python-openstackclient tempest trove zaqar masakari"
-OS_PROJECTS=${OS_PROJECTS-$_OS_PROJECTS}
+OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
 
 # List of paths to prune from final docs set. The default set are pages that
 # are no longer published but are still generated from the git source
