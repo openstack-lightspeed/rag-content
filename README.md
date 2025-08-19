@@ -118,6 +118,10 @@ value):
 make build-image-os FLAVOR=gpu BUILD_GPU_ARGS="--device nvidia.com/gpu=all"
 ```
 
+> [!NOTE]
+> Using GPU capabilities within a Podman container requires setting up your OS
+> to utilize the GPU. [Follow official instructions to create the CDI](https://podman-desktop.io/docs/podman/gpu).
+
 3. The generated vector database can be found under `/rag/vector_db/os_product_docs`
 inside of the image.
 
