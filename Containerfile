@@ -51,6 +51,9 @@ WORKDIR /rag-content
 
 COPY ./scripts ./scripts
 
+# Copy the OKP content to inside the container
+COPY ./okp-content ./okp-content
+
 # Graphviz is needed to generate text documentation for octavia
 # python-devel and pcre-devel are needed for python-openstackclient
 #   python-devel was already installed in our base image
@@ -72,8 +75,11 @@ ARG INDEX_NAME=os-docs-${OS_VERSION}
 ARG NUM_WORKERS=1
 ARG RHOSO_DOCS_GIT_URL=""
 ARG VECTOR_DB_TYPE="faiss"
+ARG BUILD_OKP_CONTENT=false
+ARG OKP_CONTENT="all"
 
 ENV LD_LIBRARY_PATH=""
+ENV OKP_CONTENT=$OKP_CONTENT
 
 WORKDIR /rag-content
 
@@ -86,6 +92,9 @@ RUN if [ "$FLAVOR" = "gpu" ]; then \
     if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         FOLDER_ARG="$FOLDER_ARG --rhoso-folder rhoso-docs-plaintext"; \
     fi && \
+    if [ "$BUILD_OKP_CONTENT" = "true" ]; then \
+        FOLDER_ARG="$FOLDER_ARG --okp-folder ./okp-content --okp-content ${OKP_CONTENT}"; \
+    fi && \
     python ./scripts/generate_embeddings_openstack.py \
     --output ./vector_db/ \
     --model-dir embeddings_model \
@@ -94,7 +103,11 @@ RUN if [ "$FLAVOR" = "gpu" ]; then \
     --workers ${NUM_WORKERS} \
     --unreachable-action ${DOCS_LINK_UNREACHABLE_ACTION} \
     --vector-store-type $VECTOR_DB_TYPE \
+    --openstack-version ${OS_VERSION} \
     ${FOLDER_ARG}
+
+# Clean up the OKP content
+RUN rm -rf ./okp-content
 
 # -- Stage 3: Store the vector DB into ubi-minimal image ----------------------
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest

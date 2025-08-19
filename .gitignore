@@ -174,3 +174,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# OKP guardrails
+okp-content/*
+mimir-*
