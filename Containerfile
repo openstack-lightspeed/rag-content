@@ -56,9 +56,9 @@ COPY ./scripts ./scripts
 # Copy the OKP content to inside the container
 COPY ./okp-content ./okp-content
 
-# Graphviz is needed to generate text documentation for octavia
-# python-devel and pcre-devel are needed for python-openstackclient
-#   python-devel was already installed in our base image
+# * Graphviz is needed to generate text documentation for octavia
+# * python-devel and pcre-devel are needed for python-openstackclient
+# * python-devel was already installed in our base image
 RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         microdnf install -y graphviz pcre-devel && \
         ./scripts/get_rhoso_plaintext_docs.sh; \
