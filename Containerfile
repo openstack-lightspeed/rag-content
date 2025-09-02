@@ -28,7 +28,9 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
     fi
 
 # -- Stage 1b: Generate downstream plaintext formatted documentation ----------
-FROM ghcr.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-downstream
+# We explicitly use the CPU flavored lightspeed-core/rag-content image here
+# since there is no computation done in this stage that relies on GPU.
+FROM ghcr.io/lightspeed-core/rag-content-cpu:latest as docs-base-downstream
 
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
