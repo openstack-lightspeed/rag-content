@@ -28,7 +28,9 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
     fi
 
 # -- Stage 1b: Generate downstream plaintext formatted documentation ----------
-FROM ghcr.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-downstream
+# We explicitly use the CPU flavored lightspeed-core/rag-content image here
+# since there is no computation done in this stage that relies on GPU.
+FROM ghcr.io/lightspeed-core/rag-content-cpu:latest as docs-base-downstream
 
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
@@ -54,9 +56,9 @@ COPY ./scripts ./scripts
 # Copy the OKP content to inside the container
 COPY ./okp-content ./okp-content
 
-# Graphviz is needed to generate text documentation for octavia
-# python-devel and pcre-devel are needed for python-openstackclient
-#   python-devel was already installed in our base image
+# * Graphviz is needed to generate text documentation for octavia
+# * python-devel and pcre-devel are needed for python-openstackclient
+# * python-devel was already installed in our base image
 RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         microdnf install -y graphviz pcre-devel && \
         ./scripts/get_rhoso_plaintext_docs.sh; \
