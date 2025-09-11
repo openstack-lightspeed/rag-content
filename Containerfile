@@ -30,7 +30,7 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
 # -- Stage 1b: Generate downstream plaintext formatted documentation ----------
 # We explicitly use the CPU flavored lightspeed-core/rag-content image here
 # since there is no computation done in this stage that relies on GPU.
-FROM ghcr.io/lightspeed-core/rag-content-cpu:latest as docs-base-downstream
+FROM quay.io/lightspeed-core/rag-content-cpu:latest as docs-base-downstream
 
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
@@ -65,7 +65,7 @@ RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
     fi
 
 # -- Stage 2: Compute embeddings for the doc chunks ---------------------------
-FROM ghcr.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
+FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
 COPY --from=docs-base-upstream /rag-content /rag-content
 COPY --from=docs-base-downstream /rag-content /rag-content
 
