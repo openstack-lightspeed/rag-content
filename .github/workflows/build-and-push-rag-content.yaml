@@ -44,6 +44,18 @@ jobs:
         run: |
           echo OS_PROJECTS="nova" >> $GITHUB_ENV
 
+      # We are pushing the periodic builds to latest tag only to prevent from overwriting
+      # of existing builds that are associated with a specific commit
+      - name: Set tags for periodic builds
+        if: github.event_name == 'schedule'
+        run: |
+          echo "TAGS=latest" >> $GITHUB_ENV
+
+      - name: Set tags for push builds
+        if: github.event_name == 'push'
+        run: |
+          echo "TAGS=${{ github.sha }} ${{ env.INDEX_NAME }}" >> $GITHUB_ENV
+
       - name: Build image
         id: build_image
         uses: redhat-actions/buildah-build@v2
@@ -55,7 +67,7 @@ jobs:
           INDEX_NAME: os-docs-${{ env.OS_VERSION }}
         with:
           image: ${{ github.event.repository.name }}
-          tags: ${{ github.sha }} ${{ env.INDEX_NAME }}
+          tags: ${{ env.TAGS || format('{0} {1}', github.sha, env.INDEX_NAME) }}
           oci: true
           # We are using FLAVOR=cpu because Github runners do not offer GPUs and
           # NUM_WORKERS is set to 4 because that's the default number of cores
