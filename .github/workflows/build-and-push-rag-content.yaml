@@ -21,6 +21,10 @@ on:
 env:
   IMAGE_NAME: quay.io/openstack-lightspeed/${{ github.event.repository.name }}
   OS_VERSION: 2024.2
+  # Default tag value for manual triggers of the job or other events to prevent
+  # overwriting nightly-*, commit, or os-docs-* tags. Ideally this value should
+  # never be used.
+  TAGS: backup
 
 jobs:
   build-and-push-rag-content:
@@ -44,18 +48,34 @@ jobs:
         run: |
           echo OS_PROJECTS="nova" >> $GITHUB_ENV
 
+      # The INDEX_NAME variable specifies both the container image tag for the
+      # vector DB and the index ID for the data stored within the image. By making
+      # the image tag match the internal index ID, it becomes easy to identify
+      # which index is contained within each image.
+      - name: Set INDEX_NAME env variable
+        run: |
+          echo "INDEX_NAME=os-docs-${{ env.OS_VERSION }}" >> $GITHUB_ENV
+
+      # For periodic nightly builds, use nightly-YYYYMMDD and os-docs-2024.2
+      # tags to avoid overwriting commit-based tags. This prevents breaking
+      # existing sha256 references used by openstack-k8s-operators/openstack-operator
+      # builds. Please modify with caution!
+      - name: Set TAGS for periodic builds
+        if: github.event_name == 'schedule'
+        run: |
+          echo "TAGS=nightly-$(date -u +'%Y%m%d') ${{ env.INDEX_NAME }}" >> $GITHUB_ENV
+
+      - name: Set TAGS for push builds
+        if: github.event_name == 'push'
+        run: |
+          echo "TAGS=${{ github.sha }} ${{ env.INDEX_NAME }}" >> $GITHUB_ENV
+
       - name: Build image
         id: build_image
         uses: redhat-actions/buildah-build@v2
-        env:
-          # This variable should be used to specify the tag for the vector DB
-          # container image and the name of the index ID for the data inside
-          # that image. The idea is to make the image tag equal to the index ID
-          # used inside, so it's easy to understand what index ID is within that image.
-          INDEX_NAME: os-docs-${{ env.OS_VERSION }}
         with:
           image: ${{ github.event.repository.name }}
-          tags: ${{ github.sha }} ${{ env.INDEX_NAME }}
+          tags: ${{ env.TAGS }}
           oci: true
           # We are using FLAVOR=cpu because Github runners do not offer GPUs and
           # NUM_WORKERS is set to 4 because that's the default number of cores
