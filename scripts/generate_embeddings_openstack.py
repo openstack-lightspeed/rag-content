@@ -200,6 +200,9 @@ if __name__ == "__main__":
         help="Choose one or more OKP content types, or 'all' for all of them",
     )
 
+    # Change the default chunking mode from 'text' to 'markdown'
+    parser.set_defaults(doc_type="markdown")
+
     args = parser.parse_args()
 
     if not any([args.folder, args.rhoso_folder, args.okp_folder]):
@@ -220,6 +223,7 @@ if __name__ == "__main__":
         args.vector_store_type,
         args.index.replace("-", "_"),
         manual_chunking=args.manual_chunking,
+        doc_type=args.doc_type,
     )
 
     # Process the OpenStack documents, if provided
