@@ -61,8 +61,10 @@ COPY ./okp-content ./okp-content
 # * Graphviz is needed to generate text documentation for octavia
 # * python-devel and pcre-devel are needed for python-openstackclient
 # * python-devel was already installed in our base image
+# TODO: Make filter work with latest pandoc version (3.8.2) and update version
 RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        microdnf install -y graphviz pcre-devel && \
+        microdnf install -y graphviz pcre-devel tar && \
+        bash -c 'curl -L https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-linux-amd64.tar.gz | tar -zx --strip-components=1 -C /usr/local/' && \
         ./scripts/get_rhoso_plaintext_docs.sh; \
     fi
 

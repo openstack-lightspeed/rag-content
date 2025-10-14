@@ -24,6 +24,8 @@ from packaging.version import Version
 from typing import Generator, Tuple
 import xml.etree.ElementTree as ET
 import re
+import subprocess
+import tempfile
 
 LOG = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
@@ -189,6 +191,100 @@ def red_hat_relnotes_path(
             LOG.warning(f"Failed to detect minor_ver of {file} with regex, skipping.")
 
 
+class RelNotesConverter:
+    """Convert AsciiDoc release notes to Markdown using asciidoctor and pandoc."""
+
+    PANDOC_FILTER_PATH = (
+        Path(__file__).parent / "filters/pandoc-release_notes-filter.py"
+    ).absolute()
+
+    def __init__(self, attributes_file: Path | None = None):
+        self.attributes_file = attributes_file
+
+    def convert(self, input_path: Path, output_path: Path) -> None:
+        """Convert release notes from AsciiDoc to Markdown.
+
+        This method uses a two-step conversion process:
+        1. Convert AsciiDoc to DocBook5 XML using asciidoctor
+        2. Convert DocBook5 XML to Markdown using pandoc with a custom filter
+
+        Args:
+            input_path: Path to input .adoc file
+            output_path: Path to output .txt (markdown) file
+
+        Raises:
+            subprocess.CalledProcessError: If asciidoctor or pandoc command fails
+        """
+        LOG.info("Processing: %s", str(input_path.absolute()))
+
+        # Create output directory if it doesn't exist
+        if not output_path.exists():
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            LOG.warning(
+                "Destination file %s exists. It will be overwritten!",
+                output_path,
+            )
+
+        # Create temporary files for the conversion process
+        adoc_temp = None
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml") as xml_temp:
+            try:
+                xml_temp_path = Path(xml_temp.name)
+
+                # If attributes file is provided, create a wrapper file with includes
+                if self.attributes_file:
+                    adoc_temp = tempfile.NamedTemporaryFile(mode="w", suffix=".adoc")
+                    adoc_temp.write(
+                        f"include::{self.attributes_file.absolute()}[]\n\ninclude::{input_path.absolute()}[]\n"
+                    )
+                    adoc_temp.flush()
+                    input_for_conversion = Path(adoc_temp.name)
+                else:
+                    input_for_conversion = input_path
+
+                # Step 1: Convert AsciiDoc to DocBook5 XML
+                asciidoctor_cmd = [
+                    "asciidoctor",
+                    "-b",
+                    "docbook5",
+                    "-a",
+                    "fn-private=pass",
+                    "-o",
+                    str(xml_temp_path.absolute()),
+                    str(input_for_conversion.absolute()),
+                ]
+                subprocess.run(asciidoctor_cmd, check=True, capture_output=True)
+
+                # Step 2: Convert DocBook5 XML to Markdown using pandoc with filter
+                pandoc_cmd = [
+                    "pandoc",
+                    "-f",
+                    "docbook",
+                    "--wrap=preserve",
+                    "-t",
+                    "markdown_strict",
+                    f"--filter={self.PANDOC_FILTER_PATH}",
+                    str(xml_temp_path.absolute()),
+                    "-o",
+                    str(output_path.absolute()),
+                ]
+                subprocess.run(pandoc_cmd, check=True, capture_output=True)
+
+                LOG.info("Successfully converted: %s -> %s", input_path, output_path)
+
+            except Exception as e:
+                LOG.error(
+                    "Failed to convert: %s -> %s (%s)", input_path, output_path, e
+                )
+                raise
+
+            finally:
+                # Clean up temporary files
+                if adoc_temp:
+                    adoc_temp.close()
+
+
 if __name__ == "__main__":
     parser = get_argument_parser()
     args = parser.parse_args()
@@ -205,10 +301,10 @@ if __name__ == "__main__":
             adoc_text_converter.convert(input_path, output_path)
 
     if args.relnotes_dir:
-        adoc_text_converter = AsciidoctorConverter()
+        relnotes_converter = RelNotesConverter(attributes_file=args.attributes_file)
         for input_path, output_path in red_hat_relnotes_path(
             args.relnotes_dir,
             args.output_dir,
             args.docs_version,
         ):
-            adoc_text_converter.convert(input_path, output_path)
+            relnotes_converter.convert(input_path, output_path)
