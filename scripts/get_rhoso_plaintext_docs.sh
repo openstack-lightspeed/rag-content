@@ -91,6 +91,7 @@ generate_text_docs_rhoso() {
 
 generate_relnotes_rhoso() {
     local rhoso_relnotes_folder="./rhoso_relnotes"
+    local attributes_file="./rhoso_relnotes/attributes.adoc"
 
     if [ ! -d "${rhoso_relnotes_folder}" ]; then
         git_clone -b "${RHOSO_RELNOTES_GIT_BRANCH}" "${RHOSO_RELNOTES_GIT_URL}" "${rhoso_relnotes_folder}"
@@ -98,6 +99,7 @@ generate_relnotes_rhoso() {
 
     python ./scripts/rhoso_adoc_docs_to_text.py \
         --relnotes-dir "${rhoso_relnotes_folder}/manual-content/" \
+        --attributes-file "${attributes_file}" \
         --output-dir "$OUTPUT_DIR_NAME/"
 }
 
