@@ -27,27 +27,6 @@ import re
 LOG = logging.getLogger()
 logging.basicConfig(level=logging.INFO)
 
-DEFAULT_EXCLUDE_TITLES = [
-    "hardening_red_hat_openstack_services_on_openshift",  # Replaced by ./configuring_security_services and ./performing_security_operations
-    "integrating_openstack_identity_with_external_user_management_services",  # Replaced by configuring_security_services and performing_security_operations
-    "firewall_rules_for_red_hat_openstack_platform",  # Not applicable to 18+
-    "managing_overcloud_observability",  # Replaced by ./customizing_the_red_hat_openstack_services_on_openshift_deployment/master.txt
-    "network_planning_(sandbox)",  # Content (other than MTU details) included in ./planning_your_deployment/master.txt
-    "managing_secrets_with_the_key_manager_service",  # Replaced by ./performing_security_operations/master.txt
-    "migrating_to_the_ovn_mechanism_driver",  # Not applicable to 18+
-    "deploying_red_hat_openstack_platform_at_scale",  # Content is just a stub (WIP)
-    "deploying_distributed_compute_nodes_with_separate_heat_stacks",  # Not applicable to 18+
-    "installing_ember-csi_on_openshift_container_platform",  # Not applicable to 18+
-    "introduction_to_red_hat_openstack_platform",  # Not applicable to 18+
-    "red_hat_openstack_platform_benchmarking_service",  # Not applicable to 18+
-    "backing_up_and_restoring_the_undercloud_and_control_plane_nodes",  # No content in this doc
-    "configuring_dns_as_a_service",  # WIP, expected for RHOSO 18 FR3
-]
-
-DEFAULT_REMAP_TITLES = {
-    "command_line_interface_(cli)_reference": "command_line_interface_reference"
-}
-
 
 def get_argument_parser() -> argparse.ArgumentParser:
     """Get ArgumentParser."""
@@ -92,7 +71,6 @@ def get_argument_parser() -> argparse.ArgumentParser:
         required=False,
         type=str,
         nargs="+",
-        default=DEFAULT_EXCLUDE_TITLES,
     )
 
     parser.add_argument(
@@ -101,7 +79,6 @@ def get_argument_parser() -> argparse.ArgumentParser:
         required=False,
         type=str,
         nargs="+",
-        default=DEFAULT_REMAP_TITLES,
     )
 
     return parser
