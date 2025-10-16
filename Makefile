@@ -19,6 +19,8 @@ BUILD_EXTRA_ARGS               ?=
 VECTOR_DB_TYPE                 ?= faiss
 BUILD_OKP_CONTENT              ?= false
 OKP_CONTENT                    ?= "all"
+RHOSO_REMAP_TITLES             ?= {}
+RHOSO_EXCLUDE_TITLES           ?= ""
 
 # Define behavior based on the flavor
 ifeq ($(FLAVOR),cpu)
@@ -51,6 +53,8 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg VECTOR_DB_TYPE=$(VECTOR_DB_TYPE) \
 	--build-arg BUILD_OKP_CONTENT=$(BUILD_OKP_CONTENT) \
 	--build-arg OKP_CONTENT=$(OKP_CONTENT) \
+	--build-arg RHOSO_EXCLUDE_TITLES='$(RHOSO_EXCLUDE_TITLES)' \
+	--build-arg RHOSO_REMAP_TITLES='$(RHOSO_REMAP_TITLES)' \
 	$(BUILD_GPU_ARGS) .
 
 get-embeddings-model: ## Download embeddings model from the openstack-lightspeed/rag-content container image
