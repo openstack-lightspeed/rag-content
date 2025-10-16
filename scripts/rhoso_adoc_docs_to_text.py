@@ -73,6 +73,7 @@ def get_argument_parser() -> argparse.ArgumentParser:
         type=str,
         nargs="*",
         default=[],
+        help="List of document titles to exclude from processing (e.g., 'release_notes' 'draft_guide')",
     )
     parser.add_argument(
         "-r",
@@ -80,6 +81,7 @@ def get_argument_parser() -> argparse.ArgumentParser:
         required=False,
         type=json.loads,
         default={},
+        help='JSON mapping to rename document titles (e.g., \'{"old_title": "new_title"}\')',
     )
 
     return parser
