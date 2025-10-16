@@ -41,6 +41,13 @@ RHOSO_CA_CERT_URL=${RHOSO_CA_CERT_URL:-}
 # The name of the output directory
 OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-rhoso-docs-plaintext}
 
+# Titles that should be excluded from the final vector db build (comma separated list)
+RHOSO_EXCLUDE_TITLES=${RHOSO_EXCLUDE_TITLES:-""}
+IFS=',' read -r -a RHOSO_EXCLUDE_TITLES <<< "${RHOSO_EXCLUDE_TITLES}"
+
+# Titles that should be remapped to a different name
+RHOSO_REMAP_TITLES=${RHOSO_REMAP_TITLES:-""}
+
 # Download CA certificate if URL is provided
 CA_CERT_FILE=""
 if [ -n "${RHOSO_CA_CERT_URL}" ]; then
@@ -75,7 +82,9 @@ generate_text_docs_rhoso() {
         python ./scripts/rhoso_adoc_docs_to_text.py \
             --input-dir "${subdir}" \
             --attributes-file "${attributes_file}" \
-            --output-dir "$OUTPUT_DIR_NAME/"
+            --output-dir "$OUTPUT_DIR_NAME/" \
+            --exclude-titles "${RHOSO_EXCLUDE_TITLES[@]}" \
+            --remap-titles "${RHOSO_REMAP_TITLES}"
     done
 }
 
