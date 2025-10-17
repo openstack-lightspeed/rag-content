@@ -41,7 +41,8 @@ RHOSO_CA_CERT_URL=${RHOSO_CA_CERT_URL:-}
 # The name of the output directory
 OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-rhoso-docs-plaintext}
 
-# Titles that should be excluded from the final vector db build (comma separated list)
+# Specify titles to exclude from the final vector db build as a comma-separated
+# list with NO spaces after the commas (e.g. "title1,title2").
 RHOSO_EXCLUDE_TITLES=${RHOSO_EXCLUDE_TITLES:-""}
 IFS=',' read -r -a RHOSO_EXCLUDE_TITLES <<< "${RHOSO_EXCLUDE_TITLES}"
 
