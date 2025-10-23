@@ -63,7 +63,8 @@ COPY ./okp-content ./okp-content
 # * python-devel was already installed in our base image
 # TODO: Make filter work with latest pandoc version (3.8.2) and update version
 RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        microdnf install -y graphviz pcre-devel tar && \
+        microdnf install -y graphviz pcre-devel tar pip && \
+        pip install lxml && \
         bash -c 'curl -L https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-linux-amd64.tar.gz | tar -zx --strip-components=1 -C /usr/local/' && \
         ./scripts/get_rhoso_plaintext_docs.sh; \
     fi

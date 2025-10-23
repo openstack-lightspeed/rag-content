@@ -1,2 +1,3 @@
 lightspeed-rag-content @ git+https://github.com/lightspeed-core/rag-content@main
 packaging
+lxml
