@@ -24,10 +24,6 @@ RHOSO_DOCS_GIT_URL=${RHOSO_DOCS_GIT_URL:-}
 # Branch to checkout for RHOSO documentation repository
 RHOSO_DOCS_GIT_BRANCH=${RHOSO_DOCS_GIT_BRANCH:-rhoso180-antelope}
 
-# URL YAML file which containes RHOSO docs attributes.
-RHOSO_DOCS_ATTRIBUTES_FILE_URL=${RHOSO_DOCS_ATTRIBUTES_FILE_URL:-}
-[ -z "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}" ] && echo "Err: Mising RHOSO_DOCS_ATTRIBUTES_FILE_URL!" && exit 1
-
 # URL of Git repository for RHOSO release notes
 RHOSO_RELNOTES_GIT_URL=${RHOSO_RELNOTES_GIT_URL:-}
 [ -z "${RHOSO_RELNOTES_GIT_URL}" ] && echo "Err: Mising RHOSO_RELNOTES_GIT_URL!" && exit 1
@@ -71,18 +67,17 @@ fi
 # Clone RHOSO documentation and generate vector database for it
 generate_text_docs_rhoso() {
     local rhoso_docs_folder="./rhoso_docs"
-    local attributes_file="attributes.yaml"
 
     if [ ! -d "${rhoso_docs_folder}" ]; then
         git_clone -b "${RHOSO_DOCS_GIT_BRANCH}" "${RHOSO_DOCS_GIT_URL}" "${rhoso_docs_folder}"
     fi
 
-    curl_download -o "${attributes_file}" "${RHOSO_DOCS_ATTRIBUTES_FILE_URL}"
-
+    # No need to pass a specific attributes file for the docs, because the
+    # .adoc files in our documentation already have the appropriate `include`
+    # directive for the attributes files.
     for subdir in "${rhoso_docs_folder}/titles" "${rhoso_docs_folder}"/doc-*; do
         python ./scripts/rhoso_adoc_docs_to_text.py \
             --input-dir "${subdir}" \
-            --attributes-file "${attributes_file}" \
             --output-dir "$OUTPUT_DIR_NAME/" \
             --exclude-titles "${RHOSO_EXCLUDE_TITLES[@]}" \
             --remap-titles "${RHOSO_REMAP_TITLES}"
