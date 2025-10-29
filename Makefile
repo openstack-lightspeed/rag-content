@@ -8,7 +8,6 @@ PRUNE_PATHS                    ?= ""
 INDEX_NAME                     ?= os-docs-$(OS_VERSION)
 RHOSO_DOCS_GIT_URL             ?= ""
 RHOSO_DOCS_GIT_BRANCH          ?= ""
-RHOSO_DOCS_ATTRIBUTES_FILE_URL ?= ""
 RHOSO_RELNOTES_GIT_URL         ?= ""
 RHOSO_RELNOTES_GIT_BRANCH      ?= ""
 RHOSO_CA_CERT_URL              ?= ""
@@ -43,7 +42,6 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg PRUNE_PATHS=$(PRUNE_PATHS) \
 	--build-arg RHOSO_DOCS_GIT_URL=$(RHOSO_DOCS_GIT_URL) \
 	--build-arg RHOSO_DOCS_GIT_BRANCH=$(RHOSO_DOCS_GIT_BRANCH) \
-	--build-arg RHOSO_DOCS_ATTRIBUTES_FILE_URL=$(RHOSO_DOCS_ATTRIBUTES_FILE_URL) \
 	--build-arg RHOSO_RELNOTES_GIT_URL=$(RHOSO_RELNOTES_GIT_URL) \
 	--build-arg RHOSO_RELNOTES_GIT_BRANCH=$(RHOSO_RELNOTES_GIT_BRANCH) \
 	--build-arg RHOSO_CA_CERT_URL=$(RHOSO_CA_CERT_URL) \
