@@ -1,7 +1,7 @@
 # Default to CPU if not specified
 FLAVOR                         ?= cpu
 NUM_WORKERS                    ?= $$(( $(shell nproc --all) / 2))
-OS_VERSION                     ?= 2024.2
+OS_VERSION                     ?= 2025.2
 # Check scripts/get_openstack_plaintext_docs.sh to see OS_PROJECTS defaults
 OS_PROJECTS                    ?=
 PRUNE_PATHS                    ?= ""

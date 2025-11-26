@@ -20,7 +20,7 @@ on:
 
 env:
   IMAGE_NAME: quay.io/openstack-lightspeed/${{ github.event.repository.name }}
-  OS_VERSION: 2024.2
+  OS_VERSION: 2025.2
   # Default tag value for manual triggers of the job or other events to prevent
   # overwriting nightly-*, commit, or os-docs-* tags. Ideally this value should
   # never be used.
@@ -56,7 +56,7 @@ jobs:
         run: |
           echo "INDEX_NAME=os-docs-${{ env.OS_VERSION }}" >> $GITHUB_ENV
 
-      # For periodic nightly builds, use nightly-YYYYMMDD and os-docs-2024.2
+      # For periodic nightly builds, use nightly-YYYYMMDD and os-docs-2025.2
       # tags to avoid overwriting commit-based tags. This prevents breaking
       # existing sha256 references used by openstack-k8s-operators/openstack-operator
       # builds. Please modify with caution!

@@ -35,7 +35,7 @@ fi
 OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-docs-plaintext}
 
 # OpenStack Version
-OS_VERSION=${OS_VERSION:-2024.2}
+OS_VERSION=${OS_VERSION:-2025.2}
 
 # TODO(lucasagomes): Look into adding the "tacker" project. Document generation
 # for this project gets stuck in an infinite loop
