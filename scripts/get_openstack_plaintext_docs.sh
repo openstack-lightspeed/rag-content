@@ -57,6 +57,15 @@ if [ "${PRUNE_PATHS:-}" == "" ]; then
         python-openstackclient/2024.2/contributor/specs/command-objects/example.txt
         python-openstackclient/2024.2/contributor/specs/commands.txt
         python-openstackclient/2024.2/contributor/specs/network-topology.txt
+        # v2 API docs are not being published
+        # https://docs.openstack.org/cinder/latest/contributor/api/cinder.api.v2.html
+        # https://docs.openstack.org/cinder/latest/contributor/api/cinder.api.v3.html
+        cinder/2025.2/contributor/api/cinder.api.v2.limits.txt
+        cinder/2025.2/contributor/api/cinder.api.v2.snapshots.txt
+        cinder/2025.2/contributor/api/cinder.api.v2.views.txt
+        cinder/2025.2/contributor/api/cinder.api.v2.volume_metadata.txt
+        cinder/2025.2/contributor/api/cinder.api.v2.volumes.txt
+        cinder/2025.2/contributor/api/cinder.api.v2.views.volumes.txt
     )
 fi
 
