@@ -18,6 +18,9 @@ on:
   schedule:
     - cron: '15 02 * * *'
 
+# Do not run this workflow on forks
+if: github.repository == 'openstack-lightspeed/rag-content'
+
 env:
   IMAGE_NAME: quay.io/openstack-lightspeed/${{ github.event.repository.name }}
   OS_VERSION: 2025.2
