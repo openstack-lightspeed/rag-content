@@ -62,7 +62,8 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
         # Document name mappings for cases where internal document names
         # differ from published URL paths in Red Hat documentation
         doc_mappings = {
-            "installing_openstack_services_on_openshift": "deploying_red_hat_openstack_services_on_openshift"
+            "installing_openstack_services_on_openshift": "deploying_red_hat_openstack_services_on_openshift",
+            "deploying_rhoso_at_scale": "planning_a_large-scale_rhoso_deployment",
         }
         if "release-notes" in file_path:
             return clean_url(
