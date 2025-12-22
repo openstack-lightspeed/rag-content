@@ -71,10 +71,41 @@ RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         ./scripts/get_rhoso_plaintext_docs.sh; \
     fi
 
+# -- Stage 1c: Generate OCP plaintext formatted documentation ----------
+# Use the right CPU/GPU image or it will break the embedding stage as we replace the venv directory
+FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-ocp
+
+ARG FLAVOR=cpu
+ARG BUILD_OCP_DOCS=true
+ARG OCP_VERSIONS=""
+ARG OLS_DOC_REPO=""
+
+ENV BUILD_OCP_DOCS=$BUILD_OCP_DOCS
+ENV OLS_DOC_REPO=$OLS_DOC_REPO
+ENV OCP_VERSIONS=$OCP_VERSIONS
+
+USER 0
+WORKDIR /rag-content
+
+COPY ./scripts ./scripts
+
+RUN if [[ "${BUILD_OCP_DOCS}" == "true" ]]; then \
+        if [ "$FLAVOR" == "gpu" ]; then \
+            dnf install -y git; \
+        else \
+            microdnf install -y findutils; \
+        fi && \
+        ./scripts/get_ocp_docs.sh; \
+    else \
+        mkdir -p /rag-content/ocp-product-docs-plaintext; \
+    fi
+
 # -- Stage 2: Compute embeddings for the doc chunks ---------------------------
 FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
 COPY --from=docs-base-upstream /rag-content /rag-content
 COPY --from=docs-base-downstream /rag-content /rag-content
+# Limit what we copy to make it faster
+COPY --from=docs-base-ocp /rag-content/ocp-product-docs-plaintext /rag-content/ocp-product-docs-plaintext
 
 ARG FLAVOR=cpu
 ARG BUILD_UPSTREAM_DOCS=true
@@ -86,6 +117,7 @@ ARG RHOSO_DOCS_GIT_URL=""
 ARG VECTOR_DB_TYPE="faiss"
 ARG BUILD_OKP_CONTENT=false
 ARG OKP_CONTENT="all"
+ARG HERMETIC=false
 
 ENV OS_VERSION=$OS_VERSION
 ENV LD_LIBRARY_PATH=""
@@ -116,6 +148,38 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
     --openstack-version ${OS_VERSION} \
     ${FOLDER_ARG}
 
+# Compute embeddings for the OCP docs
+# For the latest version we need to set the index as latest unless it's one of the soported ones
+# If we only have supported versions then create latest symlink
+# Condition checks for the script to run because that is copied from the OLS repo on download
+RUN if [[ -f "/rag-content/ocp-product-docs-plaintext/ocp_generate_embeddings.py" ]]; then \
+        LATEST_VERSION="$(basename $(ls -d1 ocp-product-docs-plaintext/4.* | sort -V | tail -n 1))" && \
+        echo "Latest version is ${LATEST_VERSION}" && \
+        set -e && for OCP_VERSION in $(cd ocp-product-docs-plaintext && ls -d1 4*); do \
+            if [[ "${LATEST_VERSION}" == "${OCP_VERSION}" ]] && [[ "4.16 4.18" != *"${OCP_VERSION}"* ]]; then \
+                echo "Version ${OCP_VERSION} used as the latest version"; \
+                VERSION_POSTFIX="latest"; \
+            else \
+                echo "Version ${OCP_VERSION} is not the latest version"; \
+                VERSION_POSTFIX="${OCP_VERSION}"; \
+            fi && \
+            python ./ocp-product-docs-plaintext/ocp_generate_embeddings.py \
+                -f ./ocp-product-docs-plaintext/${OCP_VERSION} \
+                -r ./ocp-product-docs-plaintext/common_alerts \
+                -md embeddings_model \
+                -mn ${EMBEDDING_MODEL} \
+                -o ocp_vector_db/ocp_${VERSION_POSTFIX} \
+                -i ocp-product-docs-$(echo $VERSION_POSTFIX | sed 's/\./_/g') \
+                -v ${OCP_VERSION} \
+                -hb $HERMETIC; \
+        done && \
+        if [[ -d ocp_vector_db/ocp_latest ]]; then \
+            ln -s -r ocp_vector_db/ocp_latest ocp_vector_db/ocp_${LATEST_VERSION}; \
+        fi; \
+    else \
+        mkdir -p /rag-content/ocp_vector_db; \
+    fi
+
 # Clean up the OKP content
 RUN rm -rf ./okp-content
 
@@ -123,11 +187,15 @@ RUN rm -rf ./okp-content
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=lightspeed-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
 COPY --from=lightspeed-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
+COPY --from=lightspeed-core-rag-builder /rag-content/ocp_vector_db /rag/ocp_vector_db
 
 ARG INDEX_NAME
 ENV INDEX_NAME=${INDEX_NAME}
 
-RUN mkdir /licenses
+RUN if [ -z "$( ls -A '/rag-content/ocp_vector_db' )" ]; then \
+      rmdir /rag/ocp_vector_db; \
+    fi && \
+    mkdir /licenses
 COPY LICENSE /licenses/
 
 LABEL description="Red Hat OpenStack Lightspeed RAG content"

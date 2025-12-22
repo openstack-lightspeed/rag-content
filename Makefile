@@ -15,12 +15,18 @@ RHOSO_CA_CERT_URL              ?= ""
 OSLS_CONTAINER                 ?= quay.io/openstack-lightspeed/rag-content:latest
 BUILD_UPSTREAM_DOCS            ?= true
 DOCS_LINK_UNREACHABLE_ACTION   ?= warn
+BUILD_OCP_DOCS                 ?= true
+# Use defaults from the get_ocp_docs.sh script
+OCP_VERSIONS                   ?= ""
+OLS_DOC_REPO                   ?= ""
 BUILD_EXTRA_ARGS               ?=
 VECTOR_DB_TYPE                 ?= faiss
 BUILD_OKP_CONTENT              ?= false
 OKP_CONTENT                    ?= "all"
 RHOSO_REMAP_TITLES             ?= {}
 RHOSO_EXCLUDE_TITLES           ?= ""
+
+HERMETIC                       ?= false
 
 # Define behavior based on the flavor
 ifeq ($(FLAVOR),cpu)
@@ -55,6 +61,10 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg OKP_CONTENT=$(OKP_CONTENT) \
 	--build-arg RHOSO_EXCLUDE_TITLES='$(RHOSO_EXCLUDE_TITLES)' \
 	--build-arg RHOSO_REMAP_TITLES='$(RHOSO_REMAP_TITLES)' \
+	--build-arg BUILD_OCP_DOCS=$(BUILD_OCP_DOCS) \
+	--build-arg OCP_VERSIONS=$(OCP_VERSIONS) \
+	--build-arg OLS_DOC_REPO=$(OLS_DOC_REPO) \
+	--build-arg HERMETIC=$(HERMETIC) \
 	$(BUILD_GPU_ARGS) .
 
 get-embeddings-model: ## Download embeddings model from the openstack-lightspeed/rag-content container image
