@@ -93,8 +93,8 @@ ENV OKP_CONTENT=$OKP_CONTENT
 
 WORKDIR /rag-content
 
-RUN if [ "$FLAVOR" = "gpu" ]; then \
-        python -c "import torch; exit(0) if torch.cuda.is_available() else exit(1)"; \
+RUN if [ "$FLAVOR" == "gpu" ]; then \
+        python -c "import torch, sys; available=torch.cuda.is_available(); print(f'CUDA is available: {available}'); sys.exit(0 if available else 1)"; \
     fi && \
     if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         FOLDER_ARG="--folder openstack-docs-plaintext"; \
