@@ -28,10 +28,10 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
     fi
 
 # -- Stage 1b: Generate downstream plaintext formatted documentation ----------
-# We explicitly use the CPU flavored lightspeed-core/rag-content image here
-# since there is no computation done in this stage that relies on GPU.
-FROM quay.io/lightspeed-core/rag-content-cpu:latest as docs-base-downstream
+# Use the right CPU/GPU image or it will break the embedding stage as we replace the venv directory
+FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-downstream
 
+ARG FLAVOR=cpu
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
 ARG RHOSO_DOCS_GIT_URL=""
@@ -61,7 +61,11 @@ COPY ./okp-content ./okp-content
 # * python-devel was already installed in our base image
 # TODO: Make filter work with latest pandoc version (3.8.2) and update version
 RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        microdnf install -y graphviz pcre-devel tar pip && \
+        if [ "$FLAVOR" == "cpu" ]; then \
+            microdnf install -y graphviz pcre-devel tar pip; \
+        else \
+            dnf install -y graphviz pcre-devel tar pip libcudnn9 libnccl libcusparselt0 git; \
+        fi && \
         pip install lxml && \
         bash -c 'curl -L https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-linux-amd64.tar.gz | tar -zx --strip-components=1 -C /usr/local/' && \
         ./scripts/get_rhoso_plaintext_docs.sh; \
