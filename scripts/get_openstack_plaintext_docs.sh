@@ -37,35 +37,42 @@ OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-docs-plaintext}
 # OpenStack Version
 OS_VERSION=${OS_VERSION:-2025.2}
 
+# Whether to include API-Ref documentation in the build
+# Set to "true" to include API documentation (requires html2text tool)
+# Set to "false" (default) to exclude API documentation
+OS_API_DOCS=${OS_API_DOCS:-false}
+
 # TODO(lucasagomes): Look into adding the "tacker" project. Document generation
 # for this project gets stuck in an infinite loop
 # List of OpenStack Projects
-_OS_PROJECTS="nova horizon keystone neutron cinder manila glance swift ceilometer \
-octavia designate heat placement ironic barbican aodh watcher adjutant blazar \
-cyborg magnum mistral skyline-apiserver skyline-console storlets \
-venus vitrage zun python-openstackclient tempest trove zaqar masakari"
+_OS_PROJECTS="nova horizon keystone neutron neutron-lib cinder manila glance \
+swift ceilometer octavia designate heat placement ironic barbican aodh \
+watcher adjutant blazar cyborg magnum mistral skyline-apiserver \
+skyline-console storlets venus vitrage zun python-openstackclient tempest \
+trove zaqar masakari"
 OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
 
 # List of paths to prune from final docs set. The default set are pages that
 # are no longer published but are still generated from the git source
 if [ "${PRUNE_PATHS:-}" == "" ]; then
     PRUNE_PATHS=(
-        glance/2024.2/contributor/api/glance.common.format_inspector.txt
-        neutron/2024.2/contributor/internals/linuxbridge_agent.txt
-        neutron/2024.2/contributor/testing/ci_scenario_jobs.txt
-        python-openstackclient/2024.2/contributor/api/openstackclient.volume.v1.txt
-        python-openstackclient/2024.2/contributor/specs/command-objects/example.txt
-        python-openstackclient/2024.2/contributor/specs/commands.txt
-        python-openstackclient/2024.2/contributor/specs/network-topology.txt
+        # 2024.2 projects (add _docs suffix)
+        glance/2024.2_docs/contributor/api/glance.common.format_inspector.txt
+        neutron/2024.2_docs/contributor/internals/linuxbridge_agent.txt
+        neutron/2024.2_docs/contributor/testing/ci_scenario_jobs.txt
+        python-openstackclient/2024.2_docs/contributor/api/openstackclient.volume.v1.txt
+        python-openstackclient/2024.2_docs/contributor/specs/command-objects/example.txt
+        python-openstackclient/2024.2_docs/contributor/specs/commands.txt
+        python-openstackclient/2024.2_docs/contributor/specs/network-topology.txt
         # v2 API docs are not being published
         # https://docs.openstack.org/cinder/latest/contributor/api/cinder.api.v2.html
         # https://docs.openstack.org/cinder/latest/contributor/api/cinder.api.v3.html
-        cinder/2025.2/contributor/api/cinder.api.v2.limits.txt
-        cinder/2025.2/contributor/api/cinder.api.v2.snapshots.txt
-        cinder/2025.2/contributor/api/cinder.api.v2.views.txt
-        cinder/2025.2/contributor/api/cinder.api.v2.volume_metadata.txt
-        cinder/2025.2/contributor/api/cinder.api.v2.volumes.txt
-        cinder/2025.2/contributor/api/cinder.api.v2.views.volumes.txt
+        cinder/2025.2_docs/contributor/api/cinder.api.v2.limits.txt
+        cinder/2025.2_docs/contributor/api/cinder.api.v2.snapshots.txt
+        cinder/2025.2_docs/contributor/api/cinder.api.v2.views.txt
+        cinder/2025.2_docs/contributor/api/cinder.api.v2.volume_metadata.txt
+        cinder/2025.2_docs/contributor/api/cinder.api.v2.volumes.txt
+        cinder/2025.2_docs/contributor/api/cinder.api.v2.views.volumes.txt
     )
 fi
 
@@ -114,7 +121,7 @@ log_and_die() {
 #   $1 - Name of the OpenDev repository
 #   $2 - Project version
 # Usage:
-#   generate_text_doc "nova" "2024.2"
+#   generate_text_doc "nova" "2025.2"
 generate_text_doc() {
     local project=$1
     local _os_version=$2
@@ -131,7 +138,22 @@ deps =
   -r{toxinidir}/doc/requirements.txt
 "
 
+    # API-Ref tox target definition (only used if OS_API_DOCS=true)
+    local tox_text_api_ref_target="
+[testenv:text-api-ref]
+description =
+    Build API reference documentation in HTML format.
+commands =
+  sphinx-build --keep-going -j auto -b html -d api-ref/build/doctrees api-ref/source api-ref/build/html
+deps =
+  -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version}
+  -r{toxinidir}/doc/requirements.txt
+  os-api-ref
+"
+
     echo "Generating the plain-text documentation for OpenStack $project"
+    
+    echo "OS_API_DOCS is set to: $OS_API_DOCS"
 
     # Clone the project's repository, if not present
     local branch_prefix=""
@@ -178,11 +200,66 @@ deps =
         echo "$tox_text_docs_target" >> tox.ini
     fi
 
-    # Generate the docs in plain-text
-    tox -etext-docs
+    # Build regular documentation (skip for neutron-lib)
+    # neutron-lib is a library project that only generates API-Ref documentation.
+    # Its regular doc build produces no usable output, but its API-Ref is needed by Neutron.
+    if [ "$project" != "neutron-lib" ]; then
+        tox -etext-docs
+    fi
     [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-docs
 
-    # These projects have all their docs under "latest" instead of "2024.2"
+    # Build API-Ref if enabled
+    if [ "$OS_API_DOCS" = "true" ] && [ -d "./api-ref/source" ]; then
+        if ! grep -q "text-api-ref" tox.ini; then
+            echo "$tox_text_api_ref_target" >> tox.ini
+        fi
+
+        local api_ref_failed="false"
+        echo "Building API-Ref documentation for $project..."
+        tox -etext-api-ref || api_ref_failed="true"
+
+        if [ "$api_ref_failed" != "true" ]; then
+            echo "Converting API-Ref HTML to plain text..."
+            rm -rf ./api-ref/build/text
+            mv ./api-ref/build/html ./api-ref/build/text
+
+            # Convert HTML to text
+            while read -r html_file; do
+                text_file="${html_file%.html}.txt"
+                [ -e "$html_file" ] && html2text "$html_file" utf8 > "$text_file"
+            done <<< "$(find ./api-ref/build/text -name "*.html")"
+
+            # Cleanup
+            find ./api-ref/build/text -type f ! -name "*.txt" -delete
+            find ./api-ref/build/text -mindepth 1 -depth -type d -empty -delete
+
+            # Remove unpublished metadata (JIRA OSPRH-19255 requirement #1)
+            find ./api-ref/build/text -name "genindex.txt" -delete
+            find ./api-ref/build/text -name "search.txt" -delete
+            find ./api-ref/build/text -path "*/_sources/*" -delete
+            find ./api-ref/build/text -type d -name "_sources" -delete
+
+            # index.txt and api_microversion_history.txt handling to prevent unreachable URLs
+            api_file_count=$(find ./api-ref/build/text -name "*.txt" \
+                ! -name "index.txt" ! -name "genindex.txt" \
+                ! -name "search.txt" ! -name "api_microversion_history.txt" \
+                -type f | wc -l)
+
+            if [ "$api_file_count" -gt 0 ]; then
+                # Has real API files - remove navigation files
+                find ./api-ref/build/text -name "index.txt" -delete
+                find ./api-ref/build/text -name "api_microversion_history.txt" -delete
+            else
+                # Only has index.txt - skip to avoid unreachable URLs
+                echo "Skipping API-Ref for $project (no content files)"
+                rm -rf ./api-ref/build/text
+            fi
+
+            find ./api-ref/build/text -mindepth 1 -depth -type d -empty -delete 2>/dev/null || true
+        fi
+    fi
+
+    # These projects have all their docs under "latest" instead of "2025.2"
     if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ]; then
         _output_version="latest"
     else
@@ -193,14 +270,22 @@ deps =
     local project_output_dir=$WORKING_DIR/openstack-docs-plaintext/$project
     rm -rf "$project_output_dir"
     mkdir -p "$project_output_dir"
-    cp -r doc/build/text "$project_output_dir"/"$_output_version"
+    # Only copy if text docs were built (skipped for neutron-lib)
+    [ -d "doc/build/text" ] && cp -r doc/build/text "$project_output_dir"/"$_output_version"_docs
+    
+    # Copy API-Ref documentation only if OS_API_DOCS is enabled and build succeeded
+    if [ "$OS_API_DOCS" = "true" ] && [ -d "./api-ref/source" ] && \
+       [ "$api_ref_failed" != "true" ] && [ -d "api-ref/build/text" ]; then
+        cp -r api-ref/build/text "$project_output_dir"/"$_output_version"_api-ref
+        echo "API-Ref documentation copied for $project"
+    fi
 
     # Exit project's directory
     cd -
 
     # Remove artifacts
     [ "${CLEAN_FILES}" == "all" ] && rm -rf "$project"
-    rm -rf "$project_output_dir"/"$_output_version"/{_static/,.doctrees/}
+    rm -rf "$project_output_dir"/"$_output_version"*/{_static/,.doctrees/}
 }
 
 mkdir -p "$WORKING_DIR"
@@ -208,7 +293,7 @@ cd "$WORKING_DIR"
 echo "Working directory: $WORKING_DIR"
 
 for os_project in "${os_projects[@]}"; do
-    os_project_log_file=$(mktemp "${os_project}"_XXXXX.log)
+    os_project_log_file=$(mktemp -t "${os_project}"_XXXXX.log)
     LOG_FILES+=("${os_project_log_file}")
 
     echo "Generating documentation for ${os_project}. [logs -> ${WORKING_DIR}/${os_project_log_file}]"

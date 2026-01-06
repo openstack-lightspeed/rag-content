@@ -21,6 +21,7 @@ on:
 env:
   IMAGE_NAME: quay.io/openstack-lightspeed/${{ github.event.repository.name }}
   OS_VERSION: 2025.2
+  OS_API_DOCS: false
   # Default tag value for manual triggers of the job or other events to prevent
   # overwriting nightly-*, commit, or os-docs-* tags. Ideally this value should
   # never be used.
@@ -47,6 +48,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           echo OS_PROJECTS="nova" >> $GITHUB_ENV
+          echo OS_API_DOCS="true" >> $GITHUB_ENV
 
       # The INDEX_NAME variable specifies both the container image tag for the
       # vector DB and the index ID for the data stored within the image. By making
@@ -87,6 +89,7 @@ jobs:
             OS_VERSION=${{ env.OS_VERSION }}
             INDEX_NAME=${{ env.INDEX_NAME }}
             DOCS_LINK_UNREACHABLE_ACTION=fail
+            OS_API_DOCS=${{ env.OS_API_DOCS }}
           context: .
           containerfiles: |
             ./Containerfile

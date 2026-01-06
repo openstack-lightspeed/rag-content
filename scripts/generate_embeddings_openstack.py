@@ -29,22 +29,38 @@ def clean_url(unclean_url):
     return clean_url
 
 
-class OpenstackDocsMetadataProcessor(MetadataProcessor):
-    ROOT_URL = "https://docs.openstack.org"
+class OpenStackDocsMetadataProcessor(MetadataProcessor):
+    """Metadata processor for OpenStack documentation."""
 
-    def __init__(self, docs_path, base_url=ROOT_URL):
-        super(OpenstackDocsMetadataProcessor, self).__init__()
-        self._base_path = os.path.abspath(docs_path)
-        if self._base_path.endswith("/"):
-            self._base_path = self._base_path[:-1]
-        self.base_url = base_url
+    def __init__(self, folder_path: str):
+        super(OpenStackDocsMetadataProcessor, self).__init__()
+        self.folder_path = Path(folder_path)
+        self.base_url = "https://docs.openstack.org"
 
-    def url_function(self, file_path):
-        return clean_url(
-            self.base_url
-            + file_path.removeprefix(self._base_path).removesuffix("txt")
-            + "html"
-        )
+    def url_function(self, path: str) -> str:
+        """Generate the URL for a document based on its file path."""
+        path_obj = Path(path).resolve()
+        try:
+            relative_path = path_obj.relative_to(self.folder_path.resolve())
+        except ValueError:
+            relative_path = path_obj.name
+
+        relative_path = relative_path.as_posix()
+
+        # Remove _docs suffix: /cinder/2025.2_docs/ → /cinder/2025.2/
+        relative_path = re.sub(r"/(\d+\.\d+)_docs/", r"/\1/", relative_path)
+
+        # Remove _api-ref suffix: /cinder/2025.2_api-ref/ → /cinder/2025.2/api-ref/
+        relative_path = re.sub(r"/(\d+\.\d+)_api-ref/", r"/\1/api-ref/", relative_path)
+
+        # Handle "latest" version
+        relative_path = relative_path.replace("/latest_docs/", "/latest/")
+        relative_path = relative_path.replace("/latest_api-ref/", "/latest/api-ref/")
+
+        # Replace .txt with .html
+        relative_path = relative_path.replace(".txt", ".html")
+
+        return f"{self.base_url}/{relative_path}"
 
 
 class RedHatDocsMetadataProcessor(MetadataProcessor):
@@ -231,7 +247,7 @@ if __name__ == "__main__":
     if args.folder:
         document_processor.process(
             str(args.folder),
-            metadata=OpenstackDocsMetadataProcessor(args.folder),
+            metadata=OpenStackDocsMetadataProcessor(args.folder),
             required_exts=[
                 ".txt",
             ],

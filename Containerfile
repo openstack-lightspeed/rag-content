@@ -6,10 +6,12 @@ FROM registry.access.redhat.com/ubi9/python-311 as docs-base-upstream
 ARG BUILD_UPSTREAM_DOCS=true
 ARG NUM_WORKERS=1
 ARG OS_PROJECTS
+ARG OS_API_DOCS=false
 ARG PRUNE_PATHS=""
 
 ENV NUM_WORKERS=$NUM_WORKERS
 ENV OS_PROJECTS=$OS_PROJECTS
+ENV OS_API_DOCS=$OS_API_DOCS
 ENV PRUNE_PATHS=$PRUNE_PATHS
 
 USER 0
@@ -21,7 +23,7 @@ COPY ./scripts ./scripts
 # python-devel and pcre-devel are needed for python-openstackclient
 RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         dnf install -y graphviz python-devel pcre-devel pip && \
-        pip install tox && \
+        pip install tox html2text && \
         ./scripts/get_openstack_plaintext_docs.sh; \
     fi
 
