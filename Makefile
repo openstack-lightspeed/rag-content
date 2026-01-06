@@ -4,6 +4,7 @@ NUM_WORKERS                    ?= $$(( $(shell nproc --all) / 2))
 OS_VERSION                     ?= 2025.2
 # Check scripts/get_openstack_plaintext_docs.sh to see OS_PROJECTS defaults
 OS_PROJECTS                    ?=
+OS_API_DOCS                    ?= false
 PRUNE_PATHS                    ?= ""
 INDEX_NAME                     ?= os-docs-$(OS_VERSION)
 RHOSO_DOCS_GIT_URL             ?= ""
@@ -39,6 +40,7 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg NUM_WORKERS=$(NUM_WORKERS) \
 	--build-arg OS_PROJECTS=$(OS_PROJECTS) \
 	--build-arg OS_VERSION=$(OS_VERSION) \
+	--build-arg OS_API_DOCS=$(OS_API_DOCS) \
 	--build-arg PRUNE_PATHS=$(PRUNE_PATHS) \
 	--build-arg RHOSO_DOCS_GIT_URL=$(RHOSO_DOCS_GIT_URL) \
 	--build-arg RHOSO_DOCS_GIT_BRANCH=$(RHOSO_DOCS_GIT_BRANCH) \
