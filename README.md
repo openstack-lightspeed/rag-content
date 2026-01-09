@@ -94,7 +94,7 @@ python /tmp/query_rag.py -p vector_db -x os-docs -m embeddings_model -k 5 -q "ho
 8. Use the vector database stored in `./vector_db`.
 
 
-## Build Container Image Containing OpenStack Vector Database
+## Build Container Image Containing OpenStack & OCP Vector Databases
 
 1. Install requirements: `make`, `podman`.
 
@@ -103,6 +103,13 @@ python /tmp/query_rag.py -p vector_db -x os-docs -m embeddings_model -k 5 -q "ho
 ```
 make build-image-os FLAVOR=cpu
 ```
+
+> [!NOTE]
+> By default the image will include OCP RAG DBs for versions 4.18, 4.19, and
+> 4.20. This can be changed with the `OCP_VERSIONS` variable by setting it to
+> `all` or a space separated list of versions eg.
+> `OCP_VERSIONS='4.18 4.19 4.20`. We can also disable creating these DBs
+> setting `BUILD_OCP_DOCS` to anything other than `true`.
 
 If we have an Nvidia GPU card properly configured in podman we can run:
 

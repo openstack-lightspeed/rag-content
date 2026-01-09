@@ -28,10 +28,10 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
     fi
 
 # -- Stage 1b: Generate downstream plaintext formatted documentation ----------
-# We explicitly use the CPU flavored lightspeed-core/rag-content image here
-# since there is no computation done in this stage that relies on GPU.
-FROM quay.io/lightspeed-core/rag-content-cpu:latest as docs-base-downstream
+# Use the right CPU/GPU image or it will break the embedding stage as we replace the venv directory
+FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-downstream
 
+ARG FLAVOR=cpu
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
 ARG RHOSO_DOCS_GIT_URL=""
@@ -61,16 +61,47 @@ COPY ./okp-content ./okp-content
 # * python-devel was already installed in our base image
 # TODO: Make filter work with latest pandoc version (3.8.2) and update version
 RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        microdnf install -y graphviz pcre-devel tar pip && \
+        if [ "$FLAVOR" == "cpu" ]; then \
+            microdnf install -y graphviz pcre-devel tar pip; \
+        else \
+            dnf install -y graphviz pcre-devel tar pip libcudnn9 libnccl libcusparselt0 git; \
+        fi && \
         pip install lxml && \
         bash -c 'curl -L https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-linux-amd64.tar.gz | tar -zx --strip-components=1 -C /usr/local/' && \
         ./scripts/get_rhoso_plaintext_docs.sh; \
+    fi
+
+# -- Stage 1c: Generate OCP plaintext formatted documentation ----------
+# Use the right CPU/GPU image or it will break the embedding stage as we replace the venv direcotyr
+FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-ocp
+
+ARG FLAVOR=cpu
+ARG BUILD_OCP_DOCS=true
+ARG OCP_VERSIONS=""
+ARG OLS_DOC_REPO=""
+
+ENV BUILD_OCP_DOCS=$BUILD_OCP_DOCS
+ENV OLS_DOC_REPO=$OLS_DOC_REPO
+ENV OCP_VERSIONS=$OCP_VERSIONS
+
+USER 0
+WORKDIR /rag-content
+
+COPY ./scripts ./scripts
+
+RUN if [[ "${BUILD_OCP_DOCS}" == "true" ]]; then \
+        if [ "$FLAVOR" == "gpu" ]; then \
+            dnf install -y git; \
+        fi && \
+        ./scripts/get_ocp_docs.sh; \
     fi
 
 # -- Stage 2: Compute embeddings for the doc chunks ---------------------------
 FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
 COPY --from=docs-base-upstream /rag-content /rag-content
 COPY --from=docs-base-downstream /rag-content /rag-content
+# Limit what we copy to make it faster
+COPY --from=docs-base-ocp /rag-content/ocp-product-docs-plaintext /rag-content/ocp-product-docs-plaintext
 
 ARG FLAVOR=cpu
 ARG BUILD_UPSTREAM_DOCS=true
@@ -82,6 +113,7 @@ ARG RHOSO_DOCS_GIT_URL=""
 ARG VECTOR_DB_TYPE="faiss"
 ARG BUILD_OKP_CONTENT=false
 ARG OKP_CONTENT="all"
+ARG HERMETIC=false
 
 ENV OS_VERSION=$OS_VERSION
 ENV LD_LIBRARY_PATH=""
@@ -89,8 +121,8 @@ ENV OKP_CONTENT=$OKP_CONTENT
 
 WORKDIR /rag-content
 
-RUN if [ "$FLAVOR" = "gpu" ]; then \
-        python -c "import torch; exit(0) if torch.cuda.is_available() else exit(1)"; \
+RUN if [ "$FLAVOR" == "gpu" ]; then \
+        python -c "import torch, sys; available=torch.cuda.is_available(); print(f'CUDA is available: {available}'); sys.exit(0 if available else 1)"; \
     fi && \
     if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         FOLDER_ARG="--folder openstack-docs-plaintext"; \
@@ -112,6 +144,21 @@ RUN if [ "$FLAVOR" = "gpu" ]; then \
     --openstack-version ${OS_VERSION} \
     ${FOLDER_ARG}
 
+# Compute embeddings for the OCP docs
+RUN if [[ -f "/rag-content/ocp-product-docs-plaintext/ocp_generate_embeddings.py" ]]; then \
+        set -e && for OCP_VERSION in $(cd /rag-content/ocp-product-docs-plaintext && ls -d1 4*); do \
+            python ./ocp-product-docs-plaintext/ocp_generate_embeddings.py \
+                -f ./ocp-product-docs-plaintext/${OCP_VERSION} \
+                -r ./ocp-product-docs-plaintext/common_alerts \
+                -md embeddings_model \
+                -mn ${EMBEDDING_MODEL} \
+                -o ocp_vector_db/ocp_${OCP_VERSION} \
+                -i ocp-product-docs-$(echo $OCP_VERSION | sed 's/\./_/g') \
+                -v ${OCP_VERSION} \
+                -hb $HERMETIC; \
+        done; \
+    fi
+
 # Clean up the OKP content
 RUN rm -rf ./okp-content
 
@@ -119,6 +166,7 @@ RUN rm -rf ./okp-content
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=lightspeed-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
 COPY --from=lightspeed-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
+COPY --from=lightspeed-core-rag-builder /rag-content/ocp_vector_db /rag/ocp_vector_db
 
 ARG INDEX_NAME
 ENV INDEX_NAME=${INDEX_NAME}
