@@ -204,59 +204,82 @@ deps =
     # neutron-lib is a library project that only generates API-Ref documentation.
     # Its regular doc build produces no usable output, but its API-Ref is needed by Neutron.
     if [ "$project" != "neutron-lib" ]; then
+        if ! grep -q "text-docs" tox.ini; then
+            echo "$tox_text_docs_target" >> tox.ini
+        fi
         tox -etext-docs
+        [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-docs
     fi
-    [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-docs
 
-    # Build API-Ref if enabled
-    if [ "$OS_API_DOCS" = "true" ] && [ -d "./api-ref/source" ]; then
-        if ! grep -q "text-api-ref" tox.ini; then
-            echo "$tox_text_api_ref_target" >> tox.ini
+    # Build API-Ref
+    local api_ref_failed="false"
+    if [ "$OS_API_DOCS" = "true" ]; then
+        local api_dir=""
+        if [ -d "./api-ref/source" ]; then api_dir="api-ref";
+        elif [ -d "./api-guide/source" ]; then api_dir="api-guide";
         fi
 
-        local api_ref_failed="false"
-        echo "Building API-Ref documentation for $project..."
-        tox -etext-api-ref || api_ref_failed="true"
-
-        if [ "$api_ref_failed" != "true" ]; then
-            echo "Converting API-Ref HTML to plain text..."
-            rm -rf ./api-ref/build/text
-            mv ./api-ref/build/html ./api-ref/build/text
-
-            # Convert HTML to text
-            while read -r html_file; do
-                text_file="${html_file%.html}.txt"
-                [ -e "$html_file" ] && html2text "$html_file" utf8 > "$text_file"
-            done <<< "$(find ./api-ref/build/text -name "*.html")"
-
-            # Cleanup
-            find ./api-ref/build/text -type f ! -name "*.txt" -delete
-            find ./api-ref/build/text -mindepth 1 -depth -type d -empty -delete
-
-            # Remove unpublished metadata (JIRA OSPRH-19255 requirement #1)
-            find ./api-ref/build/text -name "genindex.txt" -delete
-            find ./api-ref/build/text -name "search.txt" -delete
-            find ./api-ref/build/text -path "*/_sources/*" -delete
-            find ./api-ref/build/text -type d -name "_sources" -delete
-
-            # index.txt and api_microversion_history.txt handling to prevent unreachable URLs
-            api_file_count=$(find ./api-ref/build/text -name "*.txt" \
-                ! -name "index.txt" ! -name "genindex.txt" \
-                ! -name "search.txt" ! -name "api_microversion_history.txt" \
-                -type f | wc -l)
-
-            if [ "$api_file_count" -gt 0 ]; then
-                # Has real API files - remove navigation files
-                find ./api-ref/build/text -name "index.txt" -delete
-                find ./api-ref/build/text -name "api_microversion_history.txt" -delete
-            else
-                # Only has index.txt - skip to avoid unreachable URLs
-                echo "Skipping API-Ref for $project (no content files)"
-                rm -rf ./api-ref/build/text
+        if [ -n "$api_dir" ]; then
+            echo "Building API-Ref documentation for $project using $api_dir..."
+            
+            if ! grep -q "text-api-ref" tox.ini; then
+                # Adjust the target if it's api-guide instead of api-ref
+                local adjusted_target
+                adjusted_target="${tox_text_api_ref_target//api-ref/$api_dir}"
+                echo "$adjusted_target" >> tox.ini
             fi
 
-            find ./api-ref/build/text -mindepth 1 -depth -type d -empty -delete 2>/dev/null || true
+            if ! tox -etext-api-ref; then
+                echo "WARNING: API-Ref build failed for $project"
+                api_ref_failed="true"
+            fi
+
+            if [ "$api_ref_failed" != "true" ]; then
+                echo "Converting API-Ref HTML to plain text for $project..."
+                rm -rf "./$api_dir/build/text"
+                mkdir -p "./$api_dir/build/text"
+
+                converted_count=0
+                while IFS= read -r -d '' html_file; do
+                    rel_path="${html_file#./"$api_dir"/build/html/}"
+                    text_file="./$api_dir/build/text/${rel_path%.html}.txt"
+                    mkdir -p "$(dirname "$text_file")"
+                    
+                    if command -v pandoc &> /dev/null; then
+                        # shellcheck disable=SC2015
+                        pandoc -f html -t plain --wrap=preserve "$html_file" -o "$text_file" 2>/dev/null && ((converted_count++)) || true
+                    elif command -v html2text &> /dev/null; then
+                        # shellcheck disable=SC2015
+                        html2text --body-width=0 "$html_file" > "$text_file" 2>/dev/null && ((converted_count++)) || true
+                    fi
+                done < <(find "./$api_dir/build/html" -name "*.html" -type f -print0)
+                
+                echo "Converted $converted_count HTML files to text for $project"
+                
+                # Cleanup unwanted files (logos, metadata, empty directories)
+                # shellcheck disable=SC2038
+                find "./$api_dir/build/text" -type f -exec grep -l "logo-full.svg" {} + | xargs rm -f 2>/dev/null || true
+                find "./$api_dir/build/text" \( -name "genindex.txt" -o -name "search.txt" \) -delete 2>/dev/null || true
+                rm -rf "./$api_dir/build/text/_sources" 2>/dev/null || true
+
+                # Check for content (size > 1k)
+                api_file_count=$(find "./$api_dir/build/text" -name "*.txt" -type f -size +1k 2>/dev/null | wc -l)
+
+                if [ "$api_file_count" -gt 0 ]; then
+                    echo "API-Ref: Found $api_file_count content files for $project"
+                    # Only remove index.txt if other content files exist
+                    other_files=$(find "./$api_dir/build/text" -name "*.txt" ! -name "index.txt" | wc -l)
+                    if [ "$other_files" -gt 0 ]; then
+                        rm -f "./$api_dir/build/text/index.txt" 2>/dev/null || true
+                    fi
+                else
+                    echo "Skipping API-Ref for $project (no content found)"
+                    rm -rf "./$api_dir/build/text"
+                fi
+                find "./$api_dir/build/text" -mindepth 1 -depth -type d -empty -delete 2>/dev/null || true
+            fi
         fi
+        [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-api-ref
     fi
 
     # These projects have all their docs under "latest" instead of "2025.2"
@@ -270,13 +293,15 @@ deps =
     local project_output_dir=$WORKING_DIR/openstack-docs-plaintext/$project
     rm -rf "$project_output_dir"
     mkdir -p "$project_output_dir"
-    # Only copy if text docs were built (skipped for neutron-lib)
-    [ -d "doc/build/text" ] && cp -r doc/build/text "$project_output_dir"/"$_output_version"_docs
+    # Copy regular docs if they were built (not for neutron-lib)
+    if [ -d "doc/build/text" ]; then
+        cp -r doc/build/text "$project_output_dir"/"$_output_version"_docs
+    fi
     
-    # Copy API-Ref documentation only if OS_API_DOCS is enabled and build succeeded
-    if [ "$OS_API_DOCS" = "true" ] && [ -d "./api-ref/source" ] && \
-       [ "$api_ref_failed" != "true" ] && [ -d "api-ref/build/text" ]; then
-        cp -r api-ref/build/text "$project_output_dir"/"$_output_version"_api-ref
+    # Copy API-Ref documentation if it was built successfully
+    if [ "$OS_API_DOCS" = "true" ] && [ "$api_ref_failed" != "true" ] && \
+       [ -n "$api_dir" ] && [ -d "$api_dir/build/text" ]; then
+        cp -r "$api_dir/build/text" "$project_output_dir"/"$_output_version"_api-ref
         echo "API-Ref documentation copied for $project"
     fi
 
@@ -307,7 +332,7 @@ for os_project in "${os_projects[@]}"; do
     num_running_subproc=$(jobs -r | wc -l)
     if [ "${num_running_subproc}" -ge "${NUM_WORKERS}" ]; then
         echo "Using ${num_running_subproc}/${NUM_WORKERS} workers. Waiting ..."
-        wait -n || log_and_die "Subprocess generating text documentation failed!"
+        wait || log_and_die "Subprocess generating text documentation failed!"
 	echo "Using $(( --num_running_subproc ))/${NUM_WORKERS} workers."
     fi
 done
