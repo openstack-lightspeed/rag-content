@@ -94,7 +94,7 @@ python /tmp/query_rag.py -p vector_db -x os-docs -m embeddings_model -k 5 -q "ho
 8. Use the vector database stored in `./vector_db`.
 
 
-## Build Container Image Containing OpenStack Vector Database
+## Build Container Image Containing OpenStack & OCP Vector Databases
 
 1. Install requirements: `make`, `podman`.
 
@@ -103,6 +103,36 @@ python /tmp/query_rag.py -p vector_db -x os-docs -m embeddings_model -k 5 -q "ho
 ```
 make build-image-os FLAVOR=cpu
 ```
+
+> [!NOTE]
+> By default the image will include OCP RAG DBs for versions 4.16, 4.18, and
+> latest. This can be changed with the `OCP_VERSIONS` variable by setting it to
+> `all` or a space separated list of versions eg.
+> `OCP_VERSIONS='4.16 4.18 latest`. We can also disable creating these DBs
+> setting `BUILD_OCP_DOCS` to anything other than `true`.
+
+The embedding and databases will be present in the `/rag` directory with the following structure:
+```
+.
+├── embedding_model
+├── ocp_vector_db
+│   ├── ocp_4.16
+│   ├── ocp_4.18
+│   ├── ocp_4.21
+│   └── ocp_latest
+└── vector_db
+    └── os_product_docs
+```
+
+Things to be aware here are:
+- `os_product_docs` database uses DB index id `rhoso-18.0`.
+- `ocp_4.16` and `ocp_4.18` databases use DB index id `ocp-product-docs-4_16`
+  and `ocp-product-docs-4_18` respectively.
+- `ocp_4.21` and `ocp_latest` database use DB index id
+  `ocp-product-docs-latest` as the `ocp_4.21` directory is just a symlink to
+  the `ocp_latest` database.
+- There will be no `ocp_latest` database if we only built the container image
+  with documentation for 4.16 and 4.18.
 
 If we have an Nvidia GPU card properly configured in podman we can run:
 
