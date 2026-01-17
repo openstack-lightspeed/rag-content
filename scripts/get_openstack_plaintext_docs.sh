@@ -211,7 +211,7 @@ deps =
         [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-docs
     fi
 
-    # Build API-Ref
+    # Build API-Ref if enabled and the project has an api-ref directory
     local api_ref_failed="false"
     if [ "$OS_API_DOCS" = "true" ]; then
         local api_dir=""
@@ -245,13 +245,11 @@ deps =
                     text_file="./$api_dir/build/text/${rel_path%.html}.txt"
                     mkdir -p "$(dirname "$text_file")"
                     
-                    if command -v pandoc &> /dev/null; then
-                        # shellcheck disable=SC2015
-                        pandoc -f html -t plain --wrap=preserve "$html_file" -o "$text_file" 2>/dev/null && ((converted_count++)) || true
-                    elif command -v html2text &> /dev/null; then
-                        # shellcheck disable=SC2015
-                        html2text --body-width=0 "$html_file" > "$text_file" 2>/dev/null && ((converted_count++)) || true
-                    fi
+                    # Convert HTML to plain text using pandoc (consistent output)
+                    pandoc -f html -t plain --wrap=preserve "$html_file" -o "$text_file" || {
+                        echo "ERROR: Failed to convert $html_file"
+                        return 1
+                    }
                 done < <(find "./$api_dir/build/html" -name "*.html" -type f -print0)
                 
                 echo "Converted $converted_count HTML files to text for $project"
@@ -262,15 +260,23 @@ deps =
                 find "./$api_dir/build/text" \( -name "genindex.txt" -o -name "search.txt" \) -delete 2>/dev/null || true
                 rm -rf "./$api_dir/build/text/_sources" 2>/dev/null || true
 
+                # 2. Automated Reachability Fix: Remove empty/navigation-only index files recursively
+                # This fixes "URL not reachable" errors for files like cinder/v3/index.txt or trove/index.txt
+                find "./$api_dir/build/text" -name "index.txt" -type f | while read -r f; do
+                    # Keep file ONLY if it contains API keywords (Request, Response, etc.); otherwise delete it.
+                    grep -qE "(Parameters|Request|Response|JSON|HTTP|[])" "$f" || rm -f "$f"
+                done
                 # Check for content (size > 1k)
                 api_file_count=$(find "./$api_dir/build/text" -name "*.txt" -type f -size +1k 2>/dev/null | wc -l)
 
                 if [ "$api_file_count" -gt 0 ]; then
                     echo "API-Ref: Found $api_file_count content files for $project"
-                    # Only remove index.txt if other content files exist
+                    # Remove index.txt only if other content files exist
+                    # (index.txt in Sphinx docs is a navigation page; we want actual API content)
                     other_files=$(find "./$api_dir/build/text" -name "*.txt" ! -name "index.txt" | wc -l)
                     if [ "$other_files" -gt 0 ]; then
                         rm -f "./$api_dir/build/text/index.txt" 2>/dev/null || true
+                        echo "Removed index.txt (keeping $other_files content files)"
                     fi
                 else
                     echo "Skipping API-Ref for $project (no content found)"
@@ -332,7 +338,7 @@ for os_project in "${os_projects[@]}"; do
     num_running_subproc=$(jobs -r | wc -l)
     if [ "${num_running_subproc}" -ge "${NUM_WORKERS}" ]; then
         echo "Using ${num_running_subproc}/${NUM_WORKERS} workers. Waiting ..."
-        wait || log_and_die "Subprocess generating text documentation failed!"
+        wait -n || log_and_die "Subprocess generating text documentation failed!"
 	echo "Using $(( --num_running_subproc ))/${NUM_WORKERS} workers."
     fi
 done

@@ -23,7 +23,8 @@ COPY ./scripts ./scripts
 # python-devel and pcre-devel are needed for python-openstackclient
 RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         dnf install -y graphviz python-devel pcre-devel pip && \
-        pip install tox html2text && \
+        bash -c 'curl -L https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-linux-amd64.tar.gz | tar -zx --strip-components=1 -C /usr/local/' && \
+        pip install tox && \
         ./scripts/get_openstack_plaintext_docs.sh; \
     fi
 
