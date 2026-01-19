@@ -82,6 +82,7 @@ jobs:
           # We are using FLAVOR=cpu because Github runners do not offer GPUs and
           # NUM_WORKERS is set to 4 because that's the default number of cores
           # available on ubuntu-latest runner.
+          # TODO: Enable the OCP doc building once we have GPU or no timeout
           build-args: |
             FLAVOR=cpu
             NUM_WORKERS=4
@@ -90,6 +91,7 @@ jobs:
             INDEX_NAME=${{ env.INDEX_NAME }}
             DOCS_LINK_UNREACHABLE_ACTION=fail
             OS_API_DOCS=${{ env.OS_API_DOCS }}
+            BUILD_OCP_DOCS=false
           context: .
           containerfiles: |
             ./Containerfile
