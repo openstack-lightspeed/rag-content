@@ -204,9 +204,6 @@ deps =
     # neutron-lib is a library project that only generates API-Ref documentation.
     # Its regular doc build produces no usable output, but its API-Ref is needed by Neutron.
     if [ "$project" != "neutron-lib" ]; then
-        if ! grep -q "text-docs" tox.ini; then
-            echo "$tox_text_docs_target" >> tox.ini
-        fi
         tox -etext-docs
         [ "${CLEAN_FILES}" == "venv" ] && rm -rf .tox/text-docs
     fi
@@ -260,24 +257,11 @@ deps =
                 find "./$api_dir/build/text" \( -name "genindex.txt" -o -name "search.txt" \) -delete 2>/dev/null || true
                 rm -rf "./$api_dir/build/text/_sources" 2>/dev/null || true
 
-                # 2. Automated Reachability Fix: Remove empty/navigation-only index files recursively
-                # This fixes "URL not reachable" errors for files like cinder/v3/index.txt or trove/index.txt
-                find "./$api_dir/build/text" -name "index.txt" -type f | while read -r f; do
-                    # Keep file ONLY if it contains API keywords (Request, Response, etc.); otherwise delete it.
-                    grep -qE "(Parameters|Request|Response|JSON|HTTP|[])" "$f" || rm -f "$f"
-                done
                 # Check for content (size > 1k)
                 api_file_count=$(find "./$api_dir/build/text" -name "*.txt" -type f -size +1k 2>/dev/null | wc -l)
 
                 if [ "$api_file_count" -gt 0 ]; then
                     echo "API-Ref: Found $api_file_count content files for $project"
-                    # Remove index.txt only if other content files exist
-                    # (index.txt in Sphinx docs is a navigation page; we want actual API content)
-                    other_files=$(find "./$api_dir/build/text" -name "*.txt" ! -name "index.txt" | wc -l)
-                    if [ "$other_files" -gt 0 ]; then
-                        rm -f "./$api_dir/build/text/index.txt" 2>/dev/null || true
-                        echo "Removed index.txt (keeping $other_files content files)"
-                    fi
                 else
                     echo "Skipping API-Ref for $project (no content found)"
                     rm -rf "./$api_dir/build/text"
