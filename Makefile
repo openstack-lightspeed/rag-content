@@ -25,6 +25,7 @@ BUILD_OKP_CONTENT              ?= false
 OKP_CONTENT                    ?= "all"
 RHOSO_REMAP_TITLES             ?= {}
 RHOSO_EXCLUDE_TITLES           ?= ""
+RHOSO_IGNORE_LIST              ?= ""
 
 HERMETIC                       ?= false
 
@@ -60,6 +61,7 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg BUILD_OKP_CONTENT=$(BUILD_OKP_CONTENT) \
 	--build-arg OKP_CONTENT=$(OKP_CONTENT) \
 	--build-arg RHOSO_EXCLUDE_TITLES='$(RHOSO_EXCLUDE_TITLES)' \
+	--build-arg RHOSO_IGNORE_LIST='$(RHOSO_IGNORE_LIST)' \
 	--build-arg RHOSO_REMAP_TITLES='$(RHOSO_REMAP_TITLES)' \
 	--build-arg BUILD_OCP_DOCS=$(BUILD_OCP_DOCS) \
 	--build-arg OCP_VERSIONS=$(OCP_VERSIONS) \

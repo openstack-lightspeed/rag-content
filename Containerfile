@@ -117,6 +117,7 @@ ARG RHOSO_DOCS_GIT_URL=""
 ARG VECTOR_DB_TYPE="faiss"
 ARG BUILD_OKP_CONTENT=false
 ARG OKP_CONTENT="all"
+ARG RHOSO_IGNORE_LIST=""
 ARG HERMETIC=false
 
 ENV OS_VERSION=$OS_VERSION
@@ -144,6 +145,7 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
     --index ${INDEX_NAME} \
     --workers ${NUM_WORKERS} \
     --unreachable-action ${DOCS_LINK_UNREACHABLE_ACTION} \
+    --ignore-list ${RHOSO_IGNORE_LIST} \
     --vector-store-type $VECTOR_DB_TYPE \
     --openstack-version ${OS_VERSION} \
     ${FOLDER_ARG}

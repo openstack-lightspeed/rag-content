@@ -216,11 +216,26 @@ if __name__ == "__main__":
         required=False,
         help="Choose one or more OKP content types, or 'all' for all of them",
     )
+    parser.add_argument(
+        "-il",
+        "--ignore-list",
+        type=str,
+        nargs="?",
+        const="",
+        required=False,
+        default="",
+        help="Comma-separated list of document titles to ignore URL validation for",
+    )
 
     # Change the default chunking mode from 'text' to 'markdown'
     parser.set_defaults(doc_type="markdown")
 
     args = parser.parse_args()
+
+    # Parse ignore list from command-line argument
+    ignore_list = [
+        title.strip() for title in args.ignore_list.split(",") if title.strip()
+    ]
 
     if not any([args.folder, args.rhoso_folder, args.okp_folder]):
         print(
@@ -252,6 +267,7 @@ if __name__ == "__main__":
                 ".txt",
             ],
             unreachable_action=args.unreachable_action,
+            ignore_list=ignore_list,
         )
 
     # Process the RHOSO documents, if provided
@@ -265,6 +281,7 @@ if __name__ == "__main__":
                 ".txt",
             ],
             unreachable_action=args.unreachable_action,
+            ignore_list=ignore_list,
         )
 
     # Process the OKP files, if provided
@@ -304,6 +321,7 @@ if __name__ == "__main__":
             ],
             file_extractor={".md": MarkdownReader()},
             unreachable_action=args.unreachable_action,
+            ignore_list=ignore_list,
         )
 
     # Save to the output directory
