@@ -194,7 +194,7 @@ COPY --from=lightspeed-core-rag-builder /rag-content/ocp_vector_db /rag/ocp_vect
 ARG INDEX_NAME
 ENV INDEX_NAME=${INDEX_NAME}
 
-RUN if [ -z "$( ls -A '/rag-content/ocp_vector_db' )" ]; then \
+RUN if [ -z "$( ls -A '/rag/ocp_vector_db' )" ]; then \
       rmdir /rag/ocp_vector_db; \
     fi && \
     mkdir /licenses
