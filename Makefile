@@ -21,6 +21,7 @@ BUILD_OKP_CONTENT              ?= false
 OKP_CONTENT                    ?= "all"
 RHOSO_IGNORE_LIST              ?= ""
 
+CONTAINERFILE                  ?= "./Containerfile"
 HERMETIC                       ?= false
 
 # Define behavior based on the flavor
@@ -36,7 +37,7 @@ $(error Unsupported FLAVOR $(FLAVOR), must be 'cpu' or 'gpu')
 endif
 
 build-image-os: ## Build a openstack rag-content container image
-	podman build -t rag-content-openstack:$(INDEX_NAME) -f ./Containerfile \
+	podman build -t rag-content-openstack:$(INDEX_NAME) -f $(CONTAINERFILE) \
 	--build-arg FLAVOR=$(TORCH_GROUP) \
 	--build-arg NUM_WORKERS=$(NUM_WORKERS) \
 	--build-arg OS_PROJECTS=$(OS_PROJECTS) \
