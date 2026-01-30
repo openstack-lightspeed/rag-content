@@ -35,18 +35,12 @@ ARG FLAVOR=cpu
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
 ARG RHOSO_DOCS_GIT_URL=""
-ARG RHOSO_DOCS_GIT_BRANCH=""
-ARG RHOSO_RELNOTES_GIT_URL=""
-ARG RHOSO_RELNOTES_GIT_BRANCH=""
-ARG RHOSO_EXCLUDE_TITLES=""
-ARG RHOSO_REMAP_TITLES="{}"
+ARG RHOSO_DOCS_GIT_BRANCH="main"
 
 ENV NUM_WORKERS=$NUM_WORKERS
 ENV RHOSO_CA_CERT_URL=$RHOSO_CA_CERT_URL
 ENV RHOSO_DOCS_GIT_URL=$RHOSO_DOCS_GIT_URL
 ENV RHOSO_DOCS_GIT_BRANCH=$RHOSO_DOCS_GIT_BRANCH
-ENV RHOSO_RELNOTES_GIT_URL=$RHOSO_RELNOTES_GIT_URL
-ENV RHOSO_RELNOTES_GIT_BRANCH=$RHOSO_RELNOTES_GIT_BRANCH
 
 USER 0
 WORKDIR /rag-content
@@ -56,56 +50,22 @@ COPY ./scripts ./scripts
 # Copy the OKP content to inside the container
 COPY ./okp-content ./okp-content
 
-# * Graphviz is needed to generate text documentation for octavia
-# * python-devel and pcre-devel are needed for python-openstackclient
-# * python-devel was already installed in our base image
-# TODO: Make filter work with latest pandoc version (3.8.2) and update version
-RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        if [ "$FLAVOR" == "cpu" ]; then \
-            microdnf install -y graphviz pcre-devel tar pip; \
+# Clone the RHOSO docs repository if provided
+RUN if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
+        if [ -n "$RHOSO_CA_CERT_URL" ]; then \
+            echo "Adding custom RHOSO CA certificate from $RHOSO_CA_CERT_URL"; \
+            curl -o "ca.pem" "${RHOSO_CA_CERT_URL}"; \
+            git clone -c http.sslCAInfo="ca.pem" -v --depth=1 --single-branch --branch "$RHOSO_DOCS_GIT_BRANCH" "$RHOSO_DOCS_GIT_URL" rag-docs; \
         else \
-            dnf install -y graphviz pcre-devel tar pip libcudnn9 libnccl libcusparselt0 git; \
-        fi && \
-        pip install lxml && \
-        bash -c 'curl -L https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-linux-amd64.tar.gz | tar -zx --strip-components=1 -C /usr/local/' && \
-        ./scripts/get_rhoso_plaintext_docs.sh; \
-    fi
-
-# -- Stage 1c: Generate OCP plaintext formatted documentation ----------
-# Use the right CPU/GPU image or it will break the embedding stage as we replace the venv directory
-FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-ocp
-
-ARG FLAVOR=cpu
-ARG BUILD_OCP_DOCS=true
-ARG OCP_VERSIONS=""
-ARG OLS_DOC_REPO=""
-
-ENV BUILD_OCP_DOCS=$BUILD_OCP_DOCS
-ENV OLS_DOC_REPO=$OLS_DOC_REPO
-ENV OCP_VERSIONS=$OCP_VERSIONS
-
-USER 0
-WORKDIR /rag-content
-
-COPY ./scripts ./scripts
-
-RUN if [[ "${BUILD_OCP_DOCS}" == "true" ]]; then \
-        if [ "$FLAVOR" == "gpu" ]; then \
-            dnf install -y git; \
-        else \
-            microdnf install -y findutils; \
-        fi && \
-        ./scripts/get_ocp_docs.sh; \
-    else \
-        mkdir -p /rag-content/ocp-product-docs-plaintext; \
+            echo "No custom RHOSO CA certificate provided"; \
+            GIT_SSL_NO_VERIFY=true git clone -v --depth=1 --single-branch --branch "$RHOSO_DOCS_GIT_BRANCH" "$RHOSO_DOCS_GIT_URL" rag-docs; \
+        fi \
     fi
 
 # -- Stage 2: Compute embeddings for the doc chunks ---------------------------
 FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
 COPY --from=docs-base-upstream /rag-content /rag-content
 COPY --from=docs-base-downstream /rag-content /rag-content
-# Limit what we copy to make it faster
-COPY --from=docs-base-ocp /rag-content/ocp-product-docs-plaintext /rag-content/ocp-product-docs-plaintext
 
 ARG FLAVOR=cpu
 ARG BUILD_UPSTREAM_DOCS=true
@@ -119,10 +79,12 @@ ARG BUILD_OKP_CONTENT=false
 ARG OKP_CONTENT="all"
 ARG RHOSO_IGNORE_LIST=""
 ARG HERMETIC=false
+ARG BUILD_OCP_DOCS=true
 
 ENV OS_VERSION=$OS_VERSION
 ENV LD_LIBRARY_PATH=""
 ENV OKP_CONTENT=$OKP_CONTENT
+ENV BUILD_OCP_DOCS=$BUILD_OCP_DOCS
 
 WORKDIR /rag-content
 
@@ -132,8 +94,8 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
     if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         FOLDER_ARG="--folder openstack-docs-plaintext"; \
     fi && \
-    if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        FOLDER_ARG="$FOLDER_ARG --rhoso-folder rhoso-docs-plaintext"; \
+    if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
+        FOLDER_ARG="$FOLDER_ARG --rhoso-folder rag-docs/rhoso-docs-plaintext"; \
     fi && \
     if [ "$BUILD_OKP_CONTENT" = "true" ]; then \
         FOLDER_ARG="$FOLDER_ARG --okp-folder ./okp-content --okp-content ${OKP_CONTENT}"; \
@@ -154,10 +116,10 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
 # For the latest version we need to set the index as latest unless it's one of the soported ones
 # If we only have supported versions then create latest symlink
 # Condition checks for the script to run because that is copied from the OLS repo on download
-RUN if [[ -f "/rag-content/ocp-product-docs-plaintext/ocp_generate_embeddings.py" ]]; then \
-        LATEST_VERSION="$(basename $(ls -d1 ocp-product-docs-plaintext/4.* | sort -V | tail -n 1))" && \
+RUN if [ "$BUILD_OCP_DOCS" = "true" ] && [ -f "/rag-content/rag-docs/ocp-product-docs-plaintext/ocp_generate_embeddings.py" ]; then \
+        LATEST_VERSION="$(basename $(ls -d1 rag-docs/ocp-product-docs-plaintext/4.* | sort -V | tail -n 1))" && \
         echo "Latest version is ${LATEST_VERSION}" && \
-        set -e && for OCP_VERSION in $(cd ocp-product-docs-plaintext && ls -d1 4*); do \
+        set -e && for OCP_VERSION in $(cd rag-docs/ocp-product-docs-plaintext && ls -d1 4*); do \
             if [[ "${LATEST_VERSION}" == "${OCP_VERSION}" ]] && [[ "4.16 4.18" != *"${OCP_VERSION}"* ]]; then \
                 echo "Version ${OCP_VERSION} used as the latest version"; \
                 VERSION_POSTFIX="latest"; \
@@ -165,9 +127,9 @@ RUN if [[ -f "/rag-content/ocp-product-docs-plaintext/ocp_generate_embeddings.py
                 echo "Version ${OCP_VERSION} is not the latest version"; \
                 VERSION_POSTFIX="${OCP_VERSION}"; \
             fi && \
-            python ./ocp-product-docs-plaintext/ocp_generate_embeddings.py \
-                -f ./ocp-product-docs-plaintext/${OCP_VERSION} \
-                -r ./ocp-product-docs-plaintext/common_alerts \
+            python ./rag-docs/ocp-product-docs-plaintext/ocp_generate_embeddings.py \
+                -f ./rag-docs/ocp-product-docs-plaintext/${OCP_VERSION} \
+                -r ./rag-docs/ocp-product-docs-plaintext/common_alerts \
                 -md embeddings_model \
                 -mn ${EMBEDDING_MODEL} \
                 -o ocp_vector_db/ocp_${VERSION_POSTFIX} \
