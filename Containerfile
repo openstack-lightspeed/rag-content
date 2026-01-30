@@ -35,18 +35,12 @@ ARG FLAVOR=cpu
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
 ARG RHOSO_DOCS_GIT_URL=""
-ARG RHOSO_DOCS_GIT_BRANCH=""
-ARG RHOSO_RELNOTES_GIT_URL=""
-ARG RHOSO_RELNOTES_GIT_BRANCH=""
-ARG RHOSO_EXCLUDE_TITLES=""
-ARG RHOSO_REMAP_TITLES="{}"
+ARG RHOSO_DOCS_GIT_BRANCH="main"
 
 ENV NUM_WORKERS=$NUM_WORKERS
 ENV RHOSO_CA_CERT_URL=$RHOSO_CA_CERT_URL
 ENV RHOSO_DOCS_GIT_URL=$RHOSO_DOCS_GIT_URL
 ENV RHOSO_DOCS_GIT_BRANCH=$RHOSO_DOCS_GIT_BRANCH
-ENV RHOSO_RELNOTES_GIT_URL=$RHOSO_RELNOTES_GIT_URL
-ENV RHOSO_RELNOTES_GIT_BRANCH=$RHOSO_RELNOTES_GIT_BRANCH
 
 USER 0
 WORKDIR /rag-content
@@ -56,19 +50,16 @@ COPY ./scripts ./scripts
 # Copy the OKP content to inside the container
 COPY ./okp-content ./okp-content
 
-# * Graphviz is needed to generate text documentation for octavia
-# * python-devel and pcre-devel are needed for python-openstackclient
-# * python-devel was already installed in our base image
-# TODO: Make filter work with latest pandoc version (3.8.2) and update version
-RUN if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        if [ "$FLAVOR" == "cpu" ]; then \
-            microdnf install -y graphviz pcre-devel tar pip; \
+# Clone the RHOSO docs repository if provided
+RUN if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
+        if [ -n "$RHOSO_CA_CERT_URL" ]; then \
+            echo "Adding custom RHOSO CA certificate from $RHOSO_CA_CERT_URL"; \
+            curl -o "ca.pem" "${RHOSO_CA_CERT_URL}"; \
+            git clone -c http.sslCAInfo="ca.pem" -v --depth=1 --single-branch --branch "$RHOSO_DOCS_GIT_BRANCH" "$RHOSO_DOCS_GIT_URL" rag-docs; \
         else \
-            dnf install -y graphviz pcre-devel tar pip libcudnn9 libnccl libcusparselt0 git; \
-        fi && \
-        pip install lxml && \
-        bash -c 'curl -L https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-linux-amd64.tar.gz | tar -zx --strip-components=1 -C /usr/local/' && \
-        ./scripts/get_rhoso_plaintext_docs.sh; \
+            echo "No custom RHOSO CA certificate provided"; \
+            GIT_SSL_NO_VERIFY=true git clone -v --depth=1 --single-branch --branch "$RHOSO_DOCS_GIT_BRANCH" "$RHOSO_DOCS_GIT_URL" rag-docs; \
+        fi \
     fi
 
 # -- Stage 1c: Generate OCP plaintext formatted documentation ----------
@@ -132,8 +123,8 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
     if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         FOLDER_ARG="--folder openstack-docs-plaintext"; \
     fi && \
-    if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
-        FOLDER_ARG="$FOLDER_ARG --rhoso-folder rhoso-docs-plaintext"; \
+    if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
+        FOLDER_ARG="$FOLDER_ARG --rhoso-folder rag-docs/rhoso-docs-plaintext"; \
     fi && \
     if [ "$BUILD_OKP_CONTENT" = "true" ]; then \
         FOLDER_ARG="$FOLDER_ARG --okp-folder ./okp-content --okp-content ${OKP_CONTENT}"; \
