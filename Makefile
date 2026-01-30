@@ -9,22 +9,16 @@ PRUNE_PATHS                    ?= ""
 INDEX_NAME                     ?= os-docs-$(OS_VERSION)
 RHOSO_DOCS_GIT_URL             ?= ""
 RHOSO_DOCS_GIT_BRANCH          ?= ""
-RHOSO_RELNOTES_GIT_URL         ?= ""
-RHOSO_RELNOTES_GIT_BRANCH      ?= ""
 RHOSO_CA_CERT_URL              ?= ""
 OSLS_CONTAINER                 ?= quay.io/openstack-lightspeed/rag-content:latest
 BUILD_UPSTREAM_DOCS            ?= true
 DOCS_LINK_UNREACHABLE_ACTION   ?= warn
 BUILD_OCP_DOCS                 ?= true
 # Use defaults from the get_ocp_docs.sh script
-OCP_VERSIONS                   ?= ""
-OLS_DOC_REPO                   ?= ""
 BUILD_EXTRA_ARGS               ?=
 VECTOR_DB_TYPE                 ?= faiss
 BUILD_OKP_CONTENT              ?= false
 OKP_CONTENT                    ?= "all"
-RHOSO_REMAP_TITLES             ?= {}
-RHOSO_EXCLUDE_TITLES           ?= ""
 RHOSO_IGNORE_LIST              ?= ""
 
 HERMETIC                       ?= false
@@ -51,8 +45,6 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg PRUNE_PATHS=$(PRUNE_PATHS) \
 	--build-arg RHOSO_DOCS_GIT_URL=$(RHOSO_DOCS_GIT_URL) \
 	--build-arg RHOSO_DOCS_GIT_BRANCH=$(RHOSO_DOCS_GIT_BRANCH) \
-	--build-arg RHOSO_RELNOTES_GIT_URL=$(RHOSO_RELNOTES_GIT_URL) \
-	--build-arg RHOSO_RELNOTES_GIT_BRANCH=$(RHOSO_RELNOTES_GIT_BRANCH) \
 	--build-arg RHOSO_CA_CERT_URL=$(RHOSO_CA_CERT_URL) \
 	--build-arg BUILD_UPSTREAM_DOCS=$(BUILD_UPSTREAM_DOCS) \
 	--build-arg DOCS_LINK_UNREACHABLE_ACTION=$(DOCS_LINK_UNREACHABLE_ACTION) \
@@ -60,12 +52,8 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg VECTOR_DB_TYPE=$(VECTOR_DB_TYPE) \
 	--build-arg BUILD_OKP_CONTENT=$(BUILD_OKP_CONTENT) \
 	--build-arg OKP_CONTENT=$(OKP_CONTENT) \
-	--build-arg RHOSO_EXCLUDE_TITLES='$(RHOSO_EXCLUDE_TITLES)' \
 	--build-arg RHOSO_IGNORE_LIST='$(RHOSO_IGNORE_LIST)' \
-	--build-arg RHOSO_REMAP_TITLES='$(RHOSO_REMAP_TITLES)' \
 	--build-arg BUILD_OCP_DOCS=$(BUILD_OCP_DOCS) \
-	--build-arg OCP_VERSIONS=$(OCP_VERSIONS) \
-	--build-arg OLS_DOC_REPO=$(OLS_DOC_REPO) \
 	--build-arg HERMETIC=$(HERMETIC) \
 	$(BUILD_GPU_ARGS) .
 
