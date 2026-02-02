@@ -33,17 +33,24 @@ class OpenStackDocsMetadataProcessor(MetadataProcessor):
     """Metadata processor for OpenStack documentation."""
 
     API_REF_SERVICE_MAPPING = {
-        "heat": "orchestration",
-        "manila": "shared-file-system",
         "cinder": "block-storage",
         "nova": "compute",
-        "neutron": "network",
-        "glance": "image",
+        "trove": "database",
+        "designate": "dns",
         "keystone": "identity",
-        "swift": "object-store",
-        "ironic": "baremetal",
-        "placement": "placement",
+        "glance": "image",
+        "watcher": "resource-optimization",
+        "masakari": "instance-ha",
+        "barbican": "key-manager",
         "octavia": "load-balancer",
+        "zaqar": "messaging",
+        "neutron": "network",
+        "swift": "object-store",
+        "adjutant": "registration",
+        "heat": "orchestration",
+        "placement": "placement",
+        "blazar": "reservation",
+        "manila": "shared-file-system",
         # Add more mappings as needed
     }
 
@@ -81,8 +88,7 @@ class OpenStackDocsMetadataProcessor(MetadataProcessor):
 
             # Replace .txt with .html
             remaining_path = remaining_path.replace(".txt", ".html")
-
-            # Build API-Ref URL: /api-ref/{service}/{remaining_path}
+            # Build API-Ref URL
             return f"{self.base_url}/api-ref/{service_name}/{remaining_path}"
 
         # Regular documentation - existing logic

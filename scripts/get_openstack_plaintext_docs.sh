@@ -214,6 +214,8 @@ deps =
         local api_dir=""
         if [ -d "./api-ref/source" ]; then api_dir="api-ref";
         elif [ -d "./api-guide/source" ]; then api_dir="api-guide";
+        else
+            echo "INFO: No api-ref or api-guide directory found for $project"
         fi
 
         if [ -n "$api_dir" ]; then
@@ -228,7 +230,7 @@ deps =
 
             if ! tox -etext-api-ref; then
                 echo "WARNING: API-Ref build failed for $project"
-                api_ref_failed="true"
+                exit 1
             fi
 
             if [ "$api_ref_failed" != "true" ]; then
@@ -285,13 +287,13 @@ deps =
     mkdir -p "$project_output_dir"
     # Copy regular docs if they were built (not for neutron-lib)
     if [ -d "doc/build/text" ]; then
-        cp -r doc/build/text "$project_output_dir"/"$_output_version"_docs
+        cp -r doc/build/text "${project_output_dir}/${_output_version}_docs"
     fi
     
     # Copy API-Ref documentation if it was built successfully
     if [ "$OS_API_DOCS" = "true" ] && [ "$api_ref_failed" != "true" ] && \
        [ -n "$api_dir" ] && [ -d "$api_dir/build/text" ]; then
-        cp -r "$api_dir/build/text" "$project_output_dir"/"$_output_version"_api-ref
+        cp -r "${api_dir}/build/text" "${project_output_dir}/${_output_version}_api-ref"
         echo "API-Ref documentation copied for $project"
     fi
 
