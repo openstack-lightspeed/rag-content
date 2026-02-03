@@ -13,7 +13,7 @@ RHOSO_CA_CERT_URL              ?= ""
 OSLS_CONTAINER                 ?= quay.io/openstack-lightspeed/rag-content:latest
 BUILD_UPSTREAM_DOCS            ?= true
 DOCS_LINK_UNREACHABLE_ACTION   ?= warn
-BUILD_OCP_DOCS                 ?= true
+BUILD_OCP_DOCS                 ?= false
 # Use defaults from the get_ocp_docs.sh script
 BUILD_EXTRA_ARGS               ?=
 VECTOR_DB_TYPE                 ?= faiss
