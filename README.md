@@ -98,16 +98,26 @@ python /tmp/query_rag.py -p vector_db -x os-docs -m embeddings_model -k 5 -q "ho
 
 1. Install requirements: `make`, `podman`.
 
-2. Generate the container image. If you have GPU available, use `FLAVOR=gpu`.
+2. Retrieve the upstream OCP documentation using the following snippet:
+
+```bash
+export OLS_DOC_REPO="https://github.com/openshift/lightspeed-rag-content.git"
+export OCP_VERSIONS="4.16 4.18 latest"
+
+mkdir rag-docs
+./scripts/get_ocp_docs.sh
+mv ocp-product-docs-plaintext rag-docs/
+```
+
+3. Generate the container image. If you have GPU available, use `FLAVOR=gpu`.
 
 ```
-make build-image-os FLAVOR=cpu
+make build-image-os BUILD_OCP_DOCS=true FLAVOR=cpu
 ```
 
 > [!NOTE]
-> By default the image will include OCP RAG DBs for versions 4.16, 4.18, and
-> latest. This can be changed with the `OCP_VERSIONS` variable by setting it to
-> `all` or a space separated list of versions eg.
+> OCP versions can be changed with the `OCP_VERSIONS` variable by
+> setting it to `all` or a space separated list of versions eg.
 > `OCP_VERSIONS='4.16 4.18 latest`. We can also disable creating these DBs
 > setting `BUILD_OCP_DOCS` to anything other than `true`.
 
@@ -137,7 +147,7 @@ Things to be aware here are:
 If we have an Nvidia GPU card properly configured in podman we can run:
 
 ```bash
-make build-image-os FLAVOR=gpu
+make build-image-os BUILD_OCP_DOCS=true FLAVOR=gpu
 ```
 
 If our GPU is not an Nvidia card and is supported by podman and torch, then we
@@ -145,14 +155,14 @@ can override the default value in `BUILD_GPU_ARGS` (here we show de default
 value):
 
 ```bash
-make build-image-os FLAVOR=gpu BUILD_GPU_ARGS="--device nvidia.com/gpu=all"
+make build-image-os BUILD_OCP_DOCS=true FLAVOR=gpu BUILD_GPU_ARGS="--device nvidia.com/gpu=all"
 ```
 
 > [!NOTE]
 > Using GPU capabilities within a Podman container requires setting up your OS
 > to utilize the GPU. [Follow official instructions to create the CDI](https://podman-desktop.io/docs/podman/gpu).
 
-3. The generated vector database can be found under `/rag/vector_db/os_product_docs`
+4. The generated vector database can be found under `/rag/vector_db/os_product_docs`
 inside of the image.
 
 ```
