@@ -10,3 +10,8 @@ repos:
     hooks:
       - id: ruff
       - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
