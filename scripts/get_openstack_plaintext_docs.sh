@@ -325,7 +325,7 @@ for os_project in "${os_projects[@]}"; do
     if [ "${num_running_subproc}" -ge "${NUM_WORKERS}" ]; then
         echo "Using ${num_running_subproc}/${NUM_WORKERS} workers. Waiting ..."
         wait -n || log_and_die "Subprocess generating text documentation failed!"
-    echo "Using $(( --num_running_subproc ))/${NUM_WORKERS} workers."
+        echo "Using $(( --num_running_subproc ))/${NUM_WORKERS} workers."
     fi
 done
 
