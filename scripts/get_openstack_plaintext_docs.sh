@@ -288,7 +288,7 @@ deps =
     rm -rf "$project_output_dir"
     mkdir -p "$project_output_dir"
     # Only copy if text docs were built (skipped for neutron-lib)
-    [ -d "doc/build/text" ] && cp -r doc/build/text "$project_output_dir"/"$_output_version"_docs
+    [ -d "doc/build/text" ] && cp -r doc/build/text "${project_output_dir}/${_output_version}_docs"
 
     # Copy API-Ref documentation if it was built successfully
     if [ "$OS_API_DOCS" = "true" ] && [ "$api_ref_failed" != "true" ] && \
