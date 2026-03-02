@@ -52,6 +52,9 @@ COPY ./okp-content ./okp-content
 
 # Clone the RHOSO docs repository if provided
 RUN if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
+        if [ "$FLAVOR" == "gpu" ]; then \
+            dnf install -y git; \
+        fi && \
         if [ -n "$RHOSO_CA_CERT_URL" ]; then \
             echo "Adding custom RHOSO CA certificate from $RHOSO_CA_CERT_URL"; \
             curl -o "ca.pem" "${RHOSO_CA_CERT_URL}"; \
