@@ -1,0 +1,7 @@
+# See the OWNERS SPEC docs:https://github.com/kubernetes/community/blob/master/contributors/guide/owners.md#owners-spec
+
+approvers:
+  - core
+reviewers:
+  - core
+
