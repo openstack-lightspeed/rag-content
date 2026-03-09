@@ -1,5 +1,7 @@
 # [OpenStack] RAG content
 
+This is test for Code Rabbit. This is not a correct modification of this README.md. I think I should delete this. I hope I do not forget about this.
+
 This repository contains scripts that can be used to generate a vector database
 containing information from upstream OpenStack documentation.
 
