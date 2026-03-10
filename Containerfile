@@ -101,6 +101,9 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
     if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
         FOLDER_ARG="$FOLDER_ARG --rhoso-folder rag-docs/rhoso-docs-plaintext"; \
     fi && \
+    if [ -d "rag-docs/extra-docs" ]; then \
+        FOLDER_ARG="$FOLDER_ARG --extra-folder rag-docs/extra-docs"; \
+    fi && \
     if [ "$BUILD_OKP_CONTENT" = "true" ]; then \
         FOLDER_ARG="$FOLDER_ARG --okp-folder ./okp-content --okp-content ${OKP_CONTENT}"; \
     fi && \
