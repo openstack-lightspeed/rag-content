@@ -14,6 +14,7 @@ OSLS_CONTAINER                 ?= quay.io/openstack-lightspeed/rag-content:lates
 BUILD_UPSTREAM_DOCS            ?= true
 DOCS_LINK_UNREACHABLE_ACTION   ?= warn
 BUILD_OCP_DOCS                 ?= false
+RHOSO_DOCS_EXTRA_DOCS          ?= rag-docs/extra-docs
 # Use defaults from the get_ocp_docs.sh script
 BUILD_EXTRA_ARGS               ?=
 VECTOR_DB_TYPE                 ?= faiss
@@ -55,6 +56,7 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg OKP_CONTENT=$(OKP_CONTENT) \
 	--build-arg RHOSO_IGNORE_LIST='$(RHOSO_IGNORE_LIST)' \
 	--build-arg BUILD_OCP_DOCS=$(BUILD_OCP_DOCS) \
+	--build-arg RHOSO_DOCS_EXTRA_DOCS=$(RHOSO_DOCS_EXTRA_DOCS) \
 	--build-arg HERMETIC=$(HERMETIC) \
 	$(BUILD_GPU_ARGS) .
 

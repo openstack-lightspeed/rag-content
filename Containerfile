@@ -83,6 +83,7 @@ ARG OKP_CONTENT="all"
 ARG RHOSO_IGNORE_LIST=""
 ARG HERMETIC=false
 ARG BUILD_OCP_DOCS=false
+ARG RHOSO_DOCS_EXTRA_DOCS=""
 
 ENV OS_VERSION=$OS_VERSION
 ENV LD_LIBRARY_PATH=""
@@ -100,9 +101,9 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
     fi && \
     if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
         FOLDER_ARG="$FOLDER_ARG --rhoso-folder rag-docs/rhoso-docs-plaintext"; \
-    fi && \
-    if [ -d "rag-docs/extra-docs" ]; then \
-        FOLDER_ARG="$FOLDER_ARG --extra-folder rag-docs/extra-docs"; \
+        if [ ! -z "$RHOSO_DOCS_EXTRA_DOCS" ]; then \
+            FOLDER_ARG="$FOLDER_ARG --extra-folder $RHOSO_DOCS_EXTRA_DOCS"; \
+        fi; \
     fi && \
     if [ "$BUILD_OKP_CONTENT" = "true" ]; then \
         FOLDER_ARG="$FOLDER_ARG --okp-folder ./okp-content --okp-content ${OKP_CONTENT}"; \
