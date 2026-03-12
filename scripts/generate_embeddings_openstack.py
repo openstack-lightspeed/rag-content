@@ -120,20 +120,17 @@ class OpenStackOperatorMetadataProcessor(MetadataProcessor):
 
         relative_path = relative_path.as_posix()
 
-        # Replace .txt with / for dir-style URLs
-        # ctlplane/index.txt -> ctlplane/
-        # dataplane/index.txt -> dataplane/
-        relative_path = relative_path.replace("/index.txt", "/")
-        
-        # For other files, replace .txt with .html
-        relative_path = relative_path.replace(".txt", ".html")
+        # Replace .md with / for dir-style URLs
+        # ctlplane/index.md -> ctlplane/
+        # dataplane/index.md -> dataplane/
+        relative_path = relative_path.replace("/index.md", "/")
 
-        return f"{self.base_url}/{relative_path}"
+        # For other files, replace .md with .html
+        relative_path = relative_path.replace(".md", ".html")
 
 #
 # Functions related to OpenStack OKP
 #
-
 
 def copy_openstack_errata(input_dir: Path, output_dir: Path) -> Path:
     """Returns a directory containing only OpenStack related errata files."""
@@ -325,14 +322,15 @@ if __name__ == "__main__":
 
     # Process the OpenStack Operators document, if provided
     if args.operators_folder:
-        document_processor.process(
-            str(args.operators_folder),
-            metadata=OpenStackOperatorMetadataProcessor(args.operators_folder),
-            required_exts=[
-                ".txt",
-            ],
-            unreachable_action=args.unreachable_action,
-        )
+      document_processor.process(
+          str(args.operators_folder),
+          metadata=OpenStackOperatorMetadataProcessor(args.operators_folder),
+          required_exts=[
+              ".md",
+          ],
+          file_extractor={".md": MarkdownReader()},
+          unreachable_action=args.unreachable_action,
+      )
 
     # Process the OKP files, if provided
     okp_out_dir = None

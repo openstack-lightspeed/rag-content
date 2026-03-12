@@ -63,43 +63,32 @@ cd openstack-operator/docs
 echo "Converting AsciiDoc documentation to markdown..."
 
 # Create output directory structure
-mkdir -p "$WORKING_DIR/operators-docs-markdown/ctlplane"
-mkdir -p "$WORKING_DIR/operators-docs-markdown/dataplane"
+mkdir -p "$WORKING_DIR/operators-docs-markdown"
 
 # Function to convert adoc to markdown
 convert_adoc_to_markdown() {
     local adoc_file=$1
     local output_file=$2
 
-    # Convert AsciiDoc to Markdown using pandoc
-    pandoc -f asciidoc -t markdown "$adoc_file" -o "$output_file"
+    # Convert AsciiDoc to HTML using asciidoctor, then HTML to Markdown using pandoc
+    local temp_html="${adoc_file%.adoc}.html"
+    asciidoctor -o "$temp_html" "$adoc_file"
+    pandoc -f html -t markdown "$temp_html" -o "$output_file"
+    rm "$temp_html"
 }
 
 # Process ctlplane documentation
 if [ -f "ctlplane.adoc" ]; then
     echo "Converting ctlplane.adoc..."
+    mkdir -p "$WORKING_DIR/operators-docs-markdown/ctlplane"
     convert_adoc_to_markdown "ctlplane.adoc" "$WORKING_DIR/operators-docs-markdown/ctlplane/index.md"
 fi
 
 # Process dataplane documentation
 if [ -f "dataplane.adoc" ]; then
     echo "Converting dataplane.adoc..."
+    mkdir -p "$WORKING_DIR/operators-docs-markdown/dataplane"
     convert_adoc_to_markdown "dataplane.adoc" "$WORKING_DIR/operators-docs-markdown/dataplane/index.md"
-fi
-
-# Process any additional adoc files in assemblies directory
-if [ -d "assemblies" ]; then
-    echo "Processing assemblies directory..."
-    find assemblies -name "*.adoc" -type f | while read -r adoc_file; do
-        # Get relative path and convert to output path
-        rel_path="${adoc_file#assemblies/}"
-        output_path="$WORKING_DIR/operators-docs-markdown/assemblies/${rel_path%.adoc}.md"
-        output_dir=$(dirname "$output_path")
-
-        mkdir -p "$output_dir"
-        echo "Converting $adoc_file..."
-        convert_adoc_to_markdown "$adoc_file" "$output_path"
-    done
 fi
 
 # Exit docs directory
