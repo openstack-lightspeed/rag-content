@@ -152,7 +152,7 @@ deps =
 "
 
     echo "Generating the plain-text documentation for OpenStack $project"
-    
+
     echo "OS_API_DOCS is set to: $OS_API_DOCS"
 
     # Clone the project's repository, if not present
@@ -272,7 +272,7 @@ deps =
     mkdir -p "$project_output_dir"
     # Only copy if text docs were built (skipped for neutron-lib)
     [ -d "doc/build/text" ] && cp -r doc/build/text "$project_output_dir"/"$_output_version"_docs
-    
+
     # Copy API-Ref documentation only if OS_API_DOCS is enabled and build succeeded
     if [ "$OS_API_DOCS" = "true" ] && [ -d "./api-ref/source" ] && \
        [ "$api_ref_failed" != "true" ] && [ -d "api-ref/build/text" ]; then

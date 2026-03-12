@@ -1,7 +1,33 @@
-ARG FLAVOR=cpu
+# This Containerfile.temp is a TEMPORARY file and may be removed from this repository
+# at any time without prior notice. Only those for whom this file was created
+# will be notified of its removal. If you are unsure whether this applies to you,
+# it most likely does not meaning DO NOT USE this Containerfile please. To build
+# vector database image with this Containerfile run:
+#
+#    make build-image-os CONTAINERFILE=temporary_cpu.containerfile
+#
+
+# -- CPU Base: Contains CPU installation of lightspeed-core/rag-content ------
+FROM registry.access.redhat.com/ubi9/python-312 AS cpu-base
+
+USER root
+WORKDIR /rag-content
+
+ENV EMBEDDING_MODEL=sentence-transformers/all-mpnet-base-v2
+RUN <<EOF
+    dnf install -y ruby
+    gem install asciidoctor
+
+    git clone --depth 1 https://github.com/lightspeed-core/rag-content.git
+    pip install ./rag-content
+
+    python ./rag-content/scripts/download_embeddings_model.py \
+       -l ./embeddings_model \
+       -r ${EMBEDDING_MODEL}
+EOF
 
 # -- Stage 1a: Generate upstream plaintext formatted documentation ------------
-FROM registry.access.redhat.com/ubi9/python-311 as docs-base-upstream
+FROM registry.access.redhat.com/ubi9/python-311 AS docs-base-upstream
 
 ARG BUILD_UPSTREAM_DOCS=true
 ARG NUM_WORKERS=1
@@ -29,9 +55,8 @@ RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
 
 # -- Stage 1b: Generate downstream plaintext formatted documentation ----------
 # Use the right CPU/GPU image or it will break the embedding stage as we replace the venv directory
-FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-downstream
+FROM cpu-base AS docs-base-downstream
 
-ARG FLAVOR=cpu
 ARG NUM_WORKERS=1
 ARG RHOSO_CA_CERT_URL=""
 ARG RHOSO_DOCS_GIT_URL=""
@@ -52,9 +77,6 @@ COPY ./okp-content ./okp-content
 
 # Clone the RHOSO docs repository if provided
 RUN if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
-        if [ "$FLAVOR" == "gpu" ]; then \
-            dnf install -y git; \
-        fi && \
         if [ -n "$RHOSO_CA_CERT_URL" ]; then \
             echo "Adding custom RHOSO CA certificate from $RHOSO_CA_CERT_URL"; \
             curl -o "ca.pem" "${RHOSO_CA_CERT_URL}"; \
@@ -65,63 +87,11 @@ RUN if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
         fi \
     fi
 
-# -- Stage 1c: Generate OCP plaintext formatted documentation ----------
-
-# Use the right CPU/GPU image or it will break the embedding stage as we replace the venv directory
-FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-ocp
-
-ARG FLAVOR=cpu
-ARG BUILD_OCP_DOCS=true
-ARG OCP_VERSIONS=""
-ARG OLS_DOC_REPO=""
-
-ENV BUILD_OCP_DOCS=$BUILD_OCP_DOCS
-ENV OLS_DOC_REPO=$OLS_DOC_REPO
-ENV OCP_VERSIONS=$OCP_VERSIONS
-
-USER 0
-WORKDIR /rag-content
-
-COPY ./scripts ./scripts
-
-RUN if [[ "${BUILD_OCP_DOCS}" == "true" ]]; then \
-        dnf install -y findutils && \
-        ./scripts/get_ocp_docs.sh; \
-    fi
-
-# -- Stage 1d: Generate OpenStack Operators plaintext formatted documentation  ----------
-FROM registry.access.redhat.com/ubi9/python-311 as docs-base-operators
-
-ARG BUILD_OPERATORS_DOCS=false
-ARG OPERATORS_REPO_URL=https://github.com/openstack-k8s-operators/openstack-operator.git
-ARG OPERATORS_BRANCH=main
-
-ENV OPERATORS_REPO_URL=$OPERATORS_REPO_URL
-ENV OPERATORS_BRANCH=$OPERATORS_BRANCH
-
-USER 0
-WORKDIR /rag-content
-
-COPY ./scripts ./scripts
-
-# install asciidoctor and html2text for converting AsciiDoc to plaintext 
-RUN if [ "$BUILD_OPERATORS_DOCS" = "true" ]; then \
-	dnf install -y ruby python3-pip && \
-	gem install asciidoctor && \
-	pip install html2text && \
-	./scripts/get_openstack_operators_docs.sh; \
-    fi
-
-
 # -- Stage 2: Compute embeddings for the doc chunks ---------------------------
-FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag-builder
+FROM cpu-base AS lightspeed-core-rag-builder
 COPY --from=docs-base-upstream /rag-content /rag-content
 COPY --from=docs-base-downstream /rag-content /rag-content
-# Limit what we copy to make it faster
-COPY --from=docs-base-ocp /rag-content/ocp-product-docs-plaintext /rag-content/ocp-product-docs-plaintext
-COPY --from=docs-base-operators /rag-content/openstack-operators-docs-plaintext /rag-content/openstack-operators-docs-plaintext
 
-ARG FLAVOR=cpu
 ARG BUILD_UPSTREAM_DOCS=true
 ARG DOCS_LINK_UNREACHABLE_ACTION=warn
 ARG OS_VERSION=2025.2
@@ -130,9 +100,7 @@ ARG NUM_WORKERS=1
 ARG RHOSO_DOCS_GIT_URL=""
 ARG VECTOR_DB_TYPE="faiss"
 ARG BUILD_OKP_CONTENT=false
-ARG BUILD_OPERATORS_DOCS=true
 ARG OKP_CONTENT="all"
-ARG RHOSO_IGNORE_LIST=""
 ARG HERMETIC=false
 ARG BUILD_OCP_DOCS=false
 
@@ -144,20 +112,14 @@ ENV BUILD_OCP_DOCS=$BUILD_OCP_DOCS
 USER 0
 WORKDIR /rag-content
 
-RUN if [ "$FLAVOR" == "gpu" ]; then \
-        python -c "import torch, sys; available=torch.cuda.is_available(); print(f'CUDA is available: {available}'); sys.exit(0 if available else 1)"; \
-    fi && \
-    if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
+RUN if [ "$BUILD_UPSTREAM_DOCS" = "true" ]; then \
         FOLDER_ARG="--folder openstack-docs-plaintext"; \
     fi && \
-    if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
+    if [ ! -z "${RHOSO_DOCS_GIT_URL}" ]; then \
         FOLDER_ARG="$FOLDER_ARG --rhoso-folder rag-docs/rhoso-docs-plaintext"; \
     fi && \
     if [ "$BUILD_OKP_CONTENT" = "true" ]; then \
         FOLDER_ARG="$FOLDER_ARG --okp-folder ./okp-content --okp-content ${OKP_CONTENT}"; \
-    fi && \
-    if [ "$BUILD_OPERATORS_DOCS" = "true" ]; then \
-        FOLDER_ARG="$FOLDER_ARG --operators-folder openstack-operators-docs-plaintext"; \
     fi && \
     python ./scripts/generate_embeddings_openstack.py \
     --output ./vector_db/ \
@@ -166,7 +128,6 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
     --index ${INDEX_NAME} \
     --workers ${NUM_WORKERS} \
     --unreachable-action ${DOCS_LINK_UNREACHABLE_ACTION} \
-    --ignore-list ${RHOSO_IGNORE_LIST} \
     --vector-store-type $VECTOR_DB_TYPE \
     --openstack-version ${OS_VERSION} \
     ${FOLDER_ARG}
