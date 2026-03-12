@@ -18,7 +18,7 @@ set -eou pipefail
 set -x
 
 # The name of the output directory
-OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-operators-docs-plaintext}
+OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-operators-docs-markdown}
 
 # GitHub repository details
 OPERATORS_REPO_URL=${OPERATORS_REPO_URL:-https://github.com/openstack-k8s-operators/openstack-operator.git}
@@ -42,9 +42,9 @@ if ! command -v asciidoctor &> /dev/null; then
   exit 1
 fi
 
-# Check if html2text is available
-if ! command -v html2text &> /dev/null; then
-  echo "Error: 'html2text' is not installed, please install it before continuing." >&2
+# Check if pandoc is available
+if ! command -v pandoc &> /dev/null; then
+  echo "Error: 'pandoc' is not installed, please install it before continuing." >&2
   exit 1
 fi
 
@@ -59,39 +59,32 @@ fi
 
 cd openstack-operator/docs
 
-# Convert AsciiDoc files to plain text
-echo "Converting AsciiDoc documentation to plain text..."
+# Convert AsciiDoc files to markdown
+echo "Converting AsciiDoc documentation to markdown..."
 
 # Create output directory structure
-mkdir -p "$WORKING_DIR/operators-docs-text/ctlplane"
-mkdir -p "$WORKING_DIR/operators-docs-text/dataplane"
+mkdir -p "$WORKING_DIR/operators-docs-markdown/ctlplane"
+mkdir -p "$WORKING_DIR/operators-docs-markdown/dataplane"
 
-# Function to convert adoc to text
-convert_adoc_to_text() {
+# Function to convert adoc to markdown
+convert_adoc_to_markdown() {
     local adoc_file=$1
     local output_file=$2
-    local temp_html="${adoc_file%.adoc}.html"
 
-    # Convert AsciiDoc to HTML
-    asciidoctor "$adoc_file" -o "$temp_html"
-
-    # Convert HTML to plain text
-    html2text "$temp_html" utf8 > "$output_file"
-
-    # Clean up temporary HTML file
-    rm -f "$temp_html"
+    # Convert AsciiDoc to Markdown using pandoc
+    pandoc -f asciidoc -t markdown "$adoc_file" -o "$output_file"
 }
 
 # Process ctlplane documentation
 if [ -f "ctlplane.adoc" ]; then
     echo "Converting ctlplane.adoc..."
-    convert_adoc_to_text "ctlplane.adoc" "$WORKING_DIR/operators-docs-text/ctlplane/index.txt"
+    convert_adoc_to_markdown "ctlplane.adoc" "$WORKING_DIR/operators-docs-markdown/ctlplane/index.md"
 fi
 
 # Process dataplane documentation
 if [ -f "dataplane.adoc" ]; then
     echo "Converting dataplane.adoc..."
-    convert_adoc_to_text "dataplane.adoc" "$WORKING_DIR/operators-docs-text/dataplane/index.txt"
+    convert_adoc_to_markdown "dataplane.adoc" "$WORKING_DIR/operators-docs-markdown/dataplane/index.md"
 fi
 
 # Process any additional adoc files in assemblies directory
@@ -100,12 +93,12 @@ if [ -d "assemblies" ]; then
     find assemblies -name "*.adoc" -type f | while read -r adoc_file; do
         # Get relative path and convert to output path
         rel_path="${adoc_file#assemblies/}"
-        output_path="$WORKING_DIR/operators-docs-text/assemblies/${rel_path%.adoc}.txt"
+        output_path="$WORKING_DIR/operators-docs-markdown/assemblies/${rel_path%.adoc}.md"
         output_dir=$(dirname "$output_path")
 
         mkdir -p "$output_dir"
         echo "Converting $adoc_file..."
-        convert_adoc_to_text "$adoc_file" "$output_path"
+        convert_adoc_to_markdown "$adoc_file" "$output_path"
     done
 fi
 
@@ -114,7 +107,7 @@ cd "$WORKING_DIR"
 
 # Copy to final output directory
 rm -rf "$CURR_DIR/$OUTPUT_DIR_NAME"
-cp -r "$WORKING_DIR/operators-docs-text" "$CURR_DIR/$OUTPUT_DIR_NAME"
+cp -r "$WORKING_DIR/operators-docs-markdown" "$CURR_DIR/$OUTPUT_DIR_NAME"
 
 # Remove artifacts if requested
 if [ "${CLEAN_FILES}" == "all" ]; then

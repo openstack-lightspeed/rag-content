@@ -104,12 +104,11 @@ WORKDIR /rag-content
 
 COPY ./scripts ./scripts
 
-# install asciidoctor and html2text for converting AsciiDoc to plaintext 
+# install asciidoctor and pandoc for converting AsciiDoc to markdown
 RUN if [ "$BUILD_OPERATORS_DOCS" = "true" ]; then \
-	dnf install -y ruby python3-pip && \
-	gem install asciidoctor && \
-	pip install html2text && \
-	./scripts/get_openstack_operators_docs.sh; \
+      dnf install -y ruby pandoc && \
+      gem install asciidoctor && \
+      ./scripts/get_openstack_operators_docs.sh; \
     fi
 
 
@@ -119,7 +118,7 @@ COPY --from=docs-base-upstream /rag-content /rag-content
 COPY --from=docs-base-downstream /rag-content /rag-content
 # Limit what we copy to make it faster
 COPY --from=docs-base-ocp /rag-content/ocp-product-docs-plaintext /rag-content/ocp-product-docs-plaintext
-COPY --from=docs-base-operators /rag-content/openstack-operators-docs-plaintext /rag-content/openstack-operators-docs-plaintext
+COPY --from=docs-base-operators /rag-content/openstack-operators-docs-markdown /rag-content/openstack-operators-docs-markdown
 
 ARG FLAVOR=cpu
 ARG BUILD_UPSTREAM_DOCS=true
@@ -157,7 +156,7 @@ RUN if [ "$FLAVOR" == "gpu" ]; then \
         FOLDER_ARG="$FOLDER_ARG --okp-folder ./okp-content --okp-content ${OKP_CONTENT}"; \
     fi && \
     if [ "$BUILD_OPERATORS_DOCS" = "true" ]; then \
-        FOLDER_ARG="$FOLDER_ARG --operators-folder openstack-operators-docs-plaintext"; \
+	FOLDER_ARG="$FOLDER_ARG --operators-folder openstack-operators-docs-markdown"; \
     fi && \
     python ./scripts/generate_embeddings_openstack.py \
     --output ./vector_db/ \
