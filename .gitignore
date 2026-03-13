@@ -1,5 +1,6 @@
 # OpenStack rag-content data
 openstack-docs-plaintext/
+openstack-operators-docs-markdown/
 vector_db/
 embeddings_model/
 

@@ -65,33 +65,8 @@ RUN if [ ! -z "$RHOSO_DOCS_GIT_URL" ]; then \
         fi \
     fi
 
-# -- Stage 1c: Generate OCP plaintext formatted documentation ----------
 
-# Use the right CPU/GPU image or it will break the embedding stage as we replace the venv directory
-FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as docs-base-ocp
-
-ARG FLAVOR=cpu
-ARG BUILD_OCP_DOCS=true
-ARG OCP_VERSIONS=""
-ARG OLS_DOC_REPO=""
-
-ENV BUILD_OCP_DOCS=$BUILD_OCP_DOCS
-ENV OLS_DOC_REPO=$OLS_DOC_REPO
-ENV OCP_VERSIONS=$OCP_VERSIONS
-
-USER 0
-WORKDIR /rag-content
-
-COPY ./scripts ./scripts
-
-RUN if [[ "${BUILD_OCP_DOCS}" == "true" ]]; then \
-        dnf install -y findutils && \
-        ./scripts/get_ocp_docs.sh; \
-    else \
-	mkdir -p /rag-content/ocp-product-docs-plaintext; \
-    fi
-
-# -- Stage 1d: Generate OpenStack Operators plaintext formatted documentation  ----------
+# -- Stage 1c: Generate OpenStack Operators plaintext formatted documentation  ----------
 FROM registry.access.redhat.com/ubi9/python-311 as docs-base-operators
 
 ARG BUILD_OPERATORS_DOCS=false
@@ -121,7 +96,6 @@ FROM quay.io/lightspeed-core/rag-content-${FLAVOR}:latest as lightspeed-core-rag
 COPY --from=docs-base-upstream /rag-content /rag-content
 COPY --from=docs-base-downstream /rag-content /rag-content
 # Limit what we copy to make it faster
-COPY --from=docs-base-ocp /rag-content/ocp-product-docs-plaintext /rag-content/ocp-product-docs-plaintext
 COPY --from=docs-base-operators /rag-content/openstack-operators-docs-markdown /rag-content/openstack-operators-docs-markdown
 
 ARG FLAVOR=cpu
