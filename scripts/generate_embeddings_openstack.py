@@ -99,9 +99,40 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
 
 
 #
-# Functions related to OpenStack OKP
+# Functions related to Openstack Operators
 #
 
+class OpenStackOperatorMetadataProcessor(MetadataProcessor):
+    """Metadata processor for OpenStack OpenShift Operators Documentation"""
+
+    def __init__(self, folder_path: str):
+        super(OpenStackOperatorMetadataProcessor, self).__init__()
+        self.folder_path = Path(folder_path)
+        self.base_url = "https://openstack-k8s-operators.github.io/openstack-operator"
+    
+    def url_function(self, path: str) -> str:
+        """Generate the URL for a document based on its file path."""
+        path_obj = Path(path).resolve()
+        try:
+            relative_path = path_obj.relative_to(self.folder_path.resolve())
+        except ValueError:
+            relative_path = path_obj.name
+
+        relative_path = relative_path.as_posix()
+
+        # Replace .md with / for dir-style URLs
+        # ctlplane/index.md -> ctlplane/
+        # dataplane/index.md -> dataplane/
+        relative_path = relative_path.replace("/index.md", "/")
+
+        # For other files, replace .md with .html
+        relative_path = relative_path.replace(".md", ".html")
+
+        return f"{self.base_url}/{relative_path}"
+
+#
+# Functions related to OpenStack OKP
+#
 
 def copy_openstack_errata(input_dir: Path, output_dir: Path) -> Path:
     """Returns a directory containing only OpenStack related errata files."""
@@ -185,6 +216,13 @@ if __name__ == "__main__":
         help="Directory containing the plain text RHOSO documentation",
     )
     parser.add_argument(
+        "-opf",
+        "--operators-folder",
+        type=Path,
+        required=False,
+        help="Directory containing the plain text OpenStack Operators documentation",
+        )
+    parser.add_argument(
         "-ua",
         "--unreachable-action",
         choices=["warn", "drop", "fail"],
@@ -237,9 +275,9 @@ if __name__ == "__main__":
         title.strip() for title in args.ignore_list.split(",") if title.strip()
     ]
 
-    if not any([args.folder, args.rhoso_folder, args.okp_folder]):
+    if not any([args.folder, args.rhoso_folder, args.okp_folder, args.operators_folder]):
         print(
-            'Error: Either the "--folder" and/or "--rhoso-folder" and/or "--okp-folder" options '
+            'Error: Either the "--folder" and/or "--rhoso-folder" and/or "--okp-folder" and/or "--operators-folder" options '
             "must be provided",
             file=sys.stderr,
         )
@@ -283,6 +321,18 @@ if __name__ == "__main__":
             unreachable_action=args.unreachable_action,
             ignore_list=ignore_list,
         )
+
+    # Process the OpenStack Operators document, if provided
+    if args.operators_folder:
+      document_processor.process(
+          str(args.operators_folder),
+          metadata=OpenStackOperatorMetadataProcessor(args.operators_folder),
+          required_exts=[
+              ".md",
+          ],
+          file_extractor={".md": MarkdownReader()},
+          unreachable_action=args.unreachable_action,
+      )
 
     # Process the OKP files, if provided
     okp_out_dir = None

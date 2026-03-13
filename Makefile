@@ -19,7 +19,12 @@ BUILD_EXTRA_ARGS               ?=
 VECTOR_DB_TYPE                 ?= faiss
 BUILD_OKP_CONTENT              ?= false
 OKP_CONTENT                    ?= "all"
+RHOSO_REMAP_TITLES             ?= {}
+RHOSO_EXCLUDE_TITLES           ?= ""
 RHOSO_IGNORE_LIST              ?= ""
+BUILD_OPERATORS_DOCS           ?= false
+OPERATORS_REPO_URL             ?= https://github.com/openstack-k8s-operators/openstack-operator.git
+OPERATORS_BRANCH               ?= main
 
 CONTAINERFILE                  ?= "./Containerfile"
 HERMETIC                       ?= false
@@ -56,6 +61,9 @@ build-image-os: ## Build a openstack rag-content container image
 	--build-arg RHOSO_IGNORE_LIST='$(RHOSO_IGNORE_LIST)' \
 	--build-arg BUILD_OCP_DOCS=$(BUILD_OCP_DOCS) \
 	--build-arg HERMETIC=$(HERMETIC) \
+	--build-arg BUILD_OPERATORS_DOCS=$(BUILD_OPERATORS_DOCS) \
+	--build-arg OPERATORS_REPO_URL=$(OPERATORS_REPO_URL) \
+	--build-arg OPERATORS_BRANCH=$(OPERATORS_BRANCH) \
 	$(BUILD_GPU_ARGS) .
 
 get-embeddings-model: ## Download embeddings model from the openstack-lightspeed/rag-content container image
