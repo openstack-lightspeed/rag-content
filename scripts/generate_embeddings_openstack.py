@@ -98,6 +98,31 @@ class RedHatDocsMetadataProcessor(MetadataProcessor):
             )
 
 
+# Extra docs metadata processor
+class ExtraDocsMetadataProcessor(MetadataProcessor):
+    """Metadata processor for extra SME-authored documentation."""
+
+    def __init__(self, folder_path: str | Path):
+        super(ExtraDocsMetadataProcessor, self).__init__()
+        self.folder_path = Path(folder_path).resolve()
+
+    def url_function(self, file_path: str) -> str:
+        return ""
+
+    def populate(self, file_path: str) -> dict:
+        metadata = {"docs_url": "", "url_reachable": False}
+        path_obj = Path(file_path).resolve()
+        try:
+            relative_path = path_obj.relative_to(self.folder_path)
+        except ValueError:
+            relative_path = Path(path_obj.name)
+        metadata["filepath"] = relative_path.as_posix()
+        title = self.get_file_title(file_path)
+        if title:
+            metadata["title"] = title
+        return metadata
+
+
 #
 # Functions related to OpenStack OKP
 #
@@ -226,6 +251,15 @@ if __name__ == "__main__":
         default="",
         help="Comma-separated list of document titles to ignore URL validation for",
     )
+    parser.add_argument(
+        "-ef",
+        "--extra-folder",
+        type=Path,
+        action="append",
+        default=[],
+        required=False,
+        help="Additional folders with markdown/txt docs to include (e.g. rag-docs/extra-docs)",
+    )
 
     # Change the default chunking mode from 'text' to 'markdown'
     parser.set_defaults(doc_type="markdown")
@@ -237,9 +271,9 @@ if __name__ == "__main__":
         title.strip() for title in args.ignore_list.split(",") if title.strip()
     ]
 
-    if not any([args.folder, args.rhoso_folder, args.okp_folder]):
+    if not any([args.folder, args.rhoso_folder, args.okp_folder, args.extra_folder]):
         print(
-            'Error: Either the "--folder" and/or "--rhoso-folder" and/or "--okp-folder" options '
+            'Error: Either the "--folder" and/or "--rhoso-folder" and/or "--okp-folder" and/or "--extra-folder" options '
             "must be provided",
             file=sys.stderr,
         )
@@ -280,6 +314,28 @@ if __name__ == "__main__":
             required_exts=[
                 ".txt",
             ],
+            unreachable_action=args.unreachable_action,
+            ignore_list=ignore_list,
+        )
+
+    # Process extra-docs folders (e.g. SME content from rag-docs/extra-docs)
+    for extra in args.extra_folder:
+        if not extra.exists():
+            print(
+                f"Error: Extra folder '{extra}' does not exist",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        if not extra.is_dir():
+            print(
+                f"Error: Extra folder '{extra}' is not a directory",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        document_processor.process(
+            str(extra),
+            metadata=ExtraDocsMetadataProcessor(extra),
+            required_exts=[".md", ".txt"],
             unreachable_action=args.unreachable_action,
             ignore_list=ignore_list,
         )
