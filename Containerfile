@@ -87,6 +87,8 @@ COPY ./scripts ./scripts
 RUN if [[ "${BUILD_OCP_DOCS}" == "true" ]]; then \
         dnf install -y findutils && \
         ./scripts/get_ocp_docs.sh; \
+    else \
+	mkdir -p /rag-content/ocp-product-docs-plaintext; \
     fi
 
 # -- Stage 1d: Generate OpenStack Operators plaintext formatted documentation  ----------
@@ -106,7 +108,9 @@ COPY ./scripts ./scripts
 
 # install asciidoctor and pandoc for converting AsciiDoc to markdown
 RUN if [ "$BUILD_OPERATORS_DOCS" = "true" ]; then \
-      dnf install -y ruby pandoc && \
+      dnf install -y ruby && \
+      dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+      dnf install -y pandoc && \
       gem install asciidoctor && \
       ./scripts/get_openstack_operators_docs.sh; \
     fi

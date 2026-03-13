@@ -128,6 +128,8 @@ class OpenStackOperatorMetadataProcessor(MetadataProcessor):
         # For other files, replace .md with .html
         relative_path = relative_path.replace(".md", ".html")
 
+        return f"{self.base_url}/{relative_path}"
+
 #
 # Functions related to OpenStack OKP
 #
