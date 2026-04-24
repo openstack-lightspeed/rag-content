@@ -151,7 +151,7 @@ make build-image-os BUILD_OCP_DOCS=true FLAVOR=gpu
 ```
 
 If our GPU is not an Nvidia card and is supported by podman and torch, then we
-can override the default value in `BUILD_GPU_ARGS` (here we show de default
+can override the default value in `BUILD_GPU_ARGS` (here we show the default
 value):
 
 ```bash
