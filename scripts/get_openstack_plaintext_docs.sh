@@ -125,12 +125,16 @@ log_and_die() {
 generate_text_doc() {
     local project=$1
     local _os_version=$2
+    # TODO(mtembo): install_command enforces constraints for ALL pip install phases.
+    # This prevents cryptography from being upgraded during package dependency install.
+    # Remove when upstream deps (cursive, sphinxcontrib-actdiag) are compatible with latest versions.
     local tox_text_docs_target="
 
 [testenv:text-docs]
 description =
     Build documentation in text format.
 basepython = $PYTHON
+install_command = pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}
 commands =
   sphinx-build --keep-going -j auto -b text doc/source doc/build/text
 deps =
@@ -139,10 +143,12 @@ deps =
 "
 
     # API-Ref tox target definition (only used if OS_API_DOCS=true)
+    # TODO(mtembo): Same install_command workaround as text-docs env above.
     local tox_text_api_ref_target="
 [testenv:text-api-ref]
 description =
     Build API reference documentation in HTML format.
+install_command = pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}
 commands =
   sphinx-build --keep-going -j auto -b html -d api-ref/build/doctrees api-ref/source api-ref/build/html
 deps =
@@ -182,6 +188,15 @@ deps =
     #    * trove/zaqar = The doc/requirements.txt file does not install all deps required to
     #                    generate the docs
     #
+    # TODO(mtembo): The following are temporary workarounds until upstream fixes are available.
+    #    * cinder/placement = sphinxcontrib-actdiag uses pkg_resources removed in setuptools 70+
+    #                         Pin setuptools<82 to maintain compatibility (OSPRH-27424)
+    #                         Remove when sphinxcontrib-actdiag is updated upstream
+    #
+    #    * cinder = Also requires cryptography<47 because cursive library references SECT571K1
+    #               binary elliptic curves removed in cryptography 47.0.0 (CVE-2026-26007)
+    #               Remove when cursive is updated to handle cryptography 47+
+    #
     if [ "$project" == "designate" ]; then
         sed -i "/'ext\.support_matrix',/d" "doc/source/conf.py"
     elif [ "$project" == "ironic" ]; then
@@ -190,6 +205,11 @@ deps =
         rm -rf doc/source/template_guide/
     elif [[ "$project" == "trove" || "$project" == "zaqar" ]]; then
         tox_text_docs_target+="  -r{toxinidir}/requirements.txt"
+    elif [ "$project" == "cinder" ]; then
+        tox_text_docs_target+="  setuptools<82
+  cryptography<47"
+    elif [ "$project" == "placement" ]; then
+        tox_text_docs_target+="  setuptools<82"
     fi
 
     if grep -q "text-docs" tox.ini; then
