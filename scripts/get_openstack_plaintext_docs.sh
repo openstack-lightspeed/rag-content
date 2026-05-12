@@ -129,13 +129,17 @@ generate_text_doc() {
     # This prevents cryptography from being upgraded during package dependency install.
     # Remove when upstream deps (cursive, sphinxcontrib-actdiag) are compatible with latest versions.
 
-    # TODO(mtembo): TEMPORARY WORKAROUND - Horizon needs setuptools<82 as FIRST dep
-    # because XStatic packages fail during pip wheel building when pkg_resources is missing.
-    # setuptools must be installed BEFORE -r{toxinidir}/doc/requirements.txt is processed.
-    # Remove when horizon/XStatic packages are compatible with setuptools 70+ or when
-    # switching to OpenStack stable/2026.1
+    # TODO(mtembo): TEMPORARY WORKAROUND - Horizon needs --no-build-isolation
+    # because XStatic packages create isolated build environments that get latest setuptools (70+)
+    # instead of our pinned setuptools<82. Without --no-build-isolation, pip creates a fresh
+    # environment for building XStatic packages, and our setuptools<82 constraint is ignored.
+    # With --no-build-isolation, pip uses the main environment where setuptools<82 is installed.
+    # Remove when horizon/XStatic packages are compatible with setuptools 70+
+    local install_cmd="pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
     local deps_prefix=""
+
     if [ "$project" == "horizon" ]; then
+        install_cmd="pip install --no-build-isolation -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
         deps_prefix="  setuptools<82
 "
     fi
@@ -146,7 +150,7 @@ generate_text_doc() {
 description =
     Build documentation in text format.
 basepython = $PYTHON
-install_command = pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}
+install_command = $install_cmd
 commands =
   sphinx-build --keep-going -j auto -b text doc/source doc/build/text
 deps =
