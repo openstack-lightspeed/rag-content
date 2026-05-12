@@ -129,18 +129,16 @@ generate_text_doc() {
     # This prevents cryptography from being upgraded during package dependency install.
     # Remove when upstream deps (cursive, sphinxcontrib-actdiag) are compatible with latest versions.
 
-    # TODO(mtembo): TEMPORARY WORKAROUND - Horizon needs setuptools<82 in install_command
-    # (not just deps) because XStatic packages fail during pip wheel building phase
-    # before deps are processed. Remove when horizon/XStatic packages are compatible
-    # with setuptools 70+ or when switching to OpenStack stable/2026.1
-    #
-    # Original (restore this when workaround no longer needed):
-    # local install_cmd="pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
-    #
-    # Workaround (pre-install setuptools<82 for horizon):
-    local install_cmd="pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
+    # TODO(mtembo): TEMPORARY WORKAROUND - Horizon needs setuptools<82 before deps install
+    # because XStatic packages fail during pip wheel building when pkg_resources is missing.
+    # Using commands_pre to install setuptools before deps processing begins.
+    # Remove when horizon/XStatic packages are compatible with setuptools 70+ or when
+    # switching to OpenStack stable/2026.1
+    local commands_pre=""
     if [ "$project" == "horizon" ]; then
-        install_cmd="pip install 'setuptools<82' && pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
+        commands_pre="commands_pre =
+  pip install 'setuptools<82'
+"
     fi
 
     local tox_text_docs_target="
@@ -149,8 +147,8 @@ generate_text_doc() {
 description =
     Build documentation in text format.
 basepython = $PYTHON
-install_command = $install_cmd
-commands =
+install_command = pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}
+${commands_pre}commands =
   sphinx-build --keep-going -j auto -b text doc/source doc/build/text
 deps =
   -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version}
