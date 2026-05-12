@@ -134,12 +134,15 @@ generate_text_doc() {
     # instead of our pinned setuptools<82. Without --no-build-isolation, pip creates a fresh
     # environment for building XStatic packages, and our setuptools<82 constraint is ignored.
     # With --no-build-isolation, pip uses the main environment where setuptools<82 is installed.
+    # Additionally, horizon's install_command must NOT use constraint file to avoid conflict between
+    # dev version (0.0.0) and constraints file version (25.5.2). Dependencies still get constraints
+    # via the deps list below.
     # Remove when horizon/XStatic packages are compatible with setuptools 70+
     local install_cmd="pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
     local deps_prefix=""
 
     if [ "$project" == "horizon" ]; then
-        install_cmd="pip install --no-build-isolation -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
+        install_cmd="pip install --no-build-isolation {opts} {packages}"
         deps_prefix="  setuptools<82
 "
     fi
