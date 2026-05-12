@@ -189,9 +189,9 @@ deps =
     #                    generate the docs
     #
     # TODO(mtembo): The following are temporary workarounds until upstream fixes are available.
-    #    * cinder/placement = sphinxcontrib-actdiag uses pkg_resources removed in setuptools 70+
-    #                         Pin setuptools<82 to maintain compatibility (OSPRH-27424)
-    #                         Remove when sphinxcontrib-actdiag is updated upstream
+    #    * cinder/placement/horizon = sphinxcontrib-actdiag uses pkg_resources removed in setuptools 70+
+    #                                 Pin setuptools<82 to maintain compatibility (OSPRH-27424)
+    #                                 Remove when sphinxcontrib-actdiag is updated upstream
     #
     #    * cinder = Also requires cryptography<47 because cursive library references SECT571K1
     #               binary elliptic curves removed in cryptography 47.0.0 (CVE-2026-26007)
@@ -209,6 +209,8 @@ deps =
         tox_text_docs_target+="  setuptools<82
   cryptography<47"
     elif [ "$project" == "placement" ]; then
+        tox_text_docs_target+="  setuptools<82"
+    elif [ "$project" == "horizon" ]; then
         tox_text_docs_target+="  setuptools<82"
     fi
 
