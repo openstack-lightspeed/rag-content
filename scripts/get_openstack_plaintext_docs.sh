@@ -152,6 +152,13 @@ generate_text_doc() {
 "
     elif [ "$project" == "python-openstackclient" ]; then
         install_cmd="pip install {opts} {packages}"
+    elif [ "$project" == "cinder" ]; then
+        deps_prefix="  setuptools<82
+  cryptography<47
+"
+    elif [ "$project" == "placement" ]; then
+        deps_prefix="  setuptools<82
+"
     fi
 
     local tox_text_docs_target="
@@ -217,10 +224,12 @@ deps =
     # TODO(mtembo): The following are temporary workarounds until upstream fixes are available.
     #    * cinder/placement/horizon = sphinxcontrib-actdiag uses pkg_resources removed in setuptools 70+
     #                                 Pin setuptools<82 to maintain compatibility (OSPRH-27424)
+    #                                 These are now handled via deps_prefix above (lines 147-162)
     #                                 Remove when sphinxcontrib-actdiag is updated upstream
     #
     #    * cinder = Also requires cryptography<47 because cursive library references SECT571K1
     #               binary elliptic curves removed in cryptography 47.0.0 (CVE-2026-26007)
+    #               This is now handled via deps_prefix above (lines 153-156)
     #               Remove when cursive is updated to handle cryptography 47+
     #
     if [ "$project" == "designate" ]; then
@@ -231,11 +240,6 @@ deps =
         rm -rf doc/source/template_guide/
     elif [[ "$project" == "trove" || "$project" == "zaqar" ]]; then
         tox_text_docs_target+="  -r{toxinidir}/requirements.txt"
-    elif [ "$project" == "cinder" ]; then
-        tox_text_docs_target+="  setuptools<82
-  cryptography<47"
-    elif [ "$project" == "placement" ]; then
-        tox_text_docs_target+="  setuptools<82"
     fi
 
     if grep -q "text-docs" tox.ini; then
