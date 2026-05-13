@@ -129,22 +129,29 @@ generate_text_doc() {
     # This prevents cryptography from being upgraded during package dependency install.
     # Remove when upstream deps (cursive, sphinxcontrib-actdiag) are compatible with latest versions.
 
-    # TODO(mtembo): TEMPORARY WORKAROUND - Horizon needs --no-build-isolation
-    # because XStatic packages create isolated build environments that get latest setuptools (70+)
-    # instead of our pinned setuptools<82. Without --no-build-isolation, pip creates a fresh
-    # environment for building XStatic packages, and our setuptools<82 constraint is ignored.
+    # TODO(mtembo): TEMPORARY WORKAROUND for projects with version conflicts
+    # Some projects (horizon, python-openstackclient) have constraint conflicts when
+    # building from git: dev version (0.0.0) vs constraints file specific version.
+    # Solution: Remove constraints from install_command for these projects only.
+    # Dependencies still get constraints via the deps list.
+    #
+    # Horizon additionally needs --no-build-isolation because XStatic packages create
+    # isolated build environments that get latest setuptools (70+) instead of our pinned
+    # setuptools<82. Without --no-build-isolation, pip creates a fresh environment for
+    # building XStatic packages, and our setuptools<82 constraint is ignored.
     # With --no-build-isolation, pip uses the main environment where setuptools<82 is installed.
-    # Additionally, horizon's install_command must NOT use constraint file to avoid conflict between
-    # dev version (0.0.0) and constraints file version (25.5.2). Dependencies still get constraints
-    # via the deps list below.
     # Remove when horizon/XStatic packages are compatible with setuptools 70+
     local install_cmd="pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}"
     local deps_prefix=""
 
+    # Projects that need constraints removed from install_command to avoid
+    # version conflicts between dev version (0.0.0) and constraints file version
     if [ "$project" == "horizon" ]; then
         install_cmd="pip install --no-build-isolation {opts} {packages}"
         deps_prefix="  setuptools<82
 "
+    elif [ "$project" == "python-openstackclient" ]; then
+        install_cmd="pip install {opts} {packages}"
     fi
 
     local tox_text_docs_target="
