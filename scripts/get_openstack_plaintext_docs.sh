@@ -35,7 +35,7 @@ fi
 OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-docs-plaintext}
 
 # OpenStack Version
-OS_VERSION=${OS_VERSION:-2025.2}
+OS_VERSION=${OS_VERSION:-2026.1}
 
 # Whether to include API-Ref documentation in the build
 # Set to "true" to include API documentation (requires html2text tool)
@@ -125,7 +125,13 @@ log_and_die() {
 generate_text_doc() {
     local project=$1
     local _os_version=$2
-    local tox_text_docs_target="
+
+    # Projects that are in upper-constraints.txt need constraints in deps section
+    # to avoid conflicts when building from git (dev version 0.0.0 vs constrained version).
+    # Projects NOT in upper-constraints.txt use install_command to constrain all dependencies.
+    if [[ "$project" == "horizon" || "$project" == "python-openstackclient" ]]; then
+        # Pattern for projects IN constraints file - matches their upstream docs pattern
+        local tox_text_docs_target="
 
 [testenv:text-docs]
 description =
@@ -137,6 +143,22 @@ deps =
   -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version}
   -r{toxinidir}/doc/requirements.txt
 "
+    else
+        # Pattern for projects NOT in constraints file - uses install_command
+        # This matches upstream cinder docs pattern
+        local tox_text_docs_target="
+
+[testenv:text-docs]
+description =
+    Build documentation in text format.
+basepython = $PYTHON
+install_command = python -m pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}
+commands =
+  sphinx-build --keep-going -j auto -b text doc/source doc/build/text
+deps =
+  -r{toxinidir}/doc/requirements.txt
+"
+    fi
 
     # API-Ref tox target definition (only used if OS_API_DOCS=true)
     local tox_text_api_ref_target="
@@ -190,6 +212,11 @@ deps =
         rm -rf doc/source/template_guide/
     elif [[ "$project" == "trove" || "$project" == "zaqar" ]]; then
         tox_text_docs_target+="  -r{toxinidir}/requirements.txt"
+    elif [ "$project" == "cinder" ]; then
+        # Cinder needs cryptography<47 because cursive library requires SECT571K1 curve
+        # which was removed in cryptography 47+
+        tox_text_docs_target+="
+  cryptography<47"
     fi
 
     if grep -q "text-docs" tox.ini; then
