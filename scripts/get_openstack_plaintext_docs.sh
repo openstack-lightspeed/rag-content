@@ -217,6 +217,10 @@ deps =
         # which was removed in cryptography 47+
         tox_text_docs_target+="
   cryptography<47"
+    elif [ "$project" == "venus" ]; then
+        # Venus needs elasticsearch<3.0.0 to avoid conflict with constraints file
+        tox_text_docs_target+="
+  elasticsearch<3.0.0"
     fi
 
     if grep -q "text-docs" tox.ini; then
