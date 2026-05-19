@@ -357,3 +357,4 @@ cp -r "$WORKING_DIR"/openstack-docs-plaintext "$CURR_DIR/$OUTPUT_DIR_NAME"
 
 # TODO(lucasagomes): Should we delete the working directory ?!
 echo "Done. Documents can be found at $CURR_DIR/$OUTPUT_DIR_NAME"
+
