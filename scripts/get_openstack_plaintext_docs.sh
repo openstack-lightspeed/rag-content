@@ -35,7 +35,7 @@ fi
 OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-openstack-docs-plaintext}
 
 # OpenStack Version
-OS_VERSION=${OS_VERSION:-2025.2}
+OS_VERSION=${OS_VERSION:-2026.1}
 
 # Whether to include API-Ref documentation in the build
 # Set to "true" to include API documentation (requires html2text tool)
@@ -125,7 +125,13 @@ log_and_die() {
 generate_text_doc() {
     local project=$1
     local _os_version=$2
-    local tox_text_docs_target="
+
+    # Projects that are in upper-constraints.txt need constraints in deps section
+    # to avoid conflicts when building from git (dev version 0.0.0 vs constrained version).
+    # Projects NOT in upper-constraints.txt use install_command to constrain all dependencies.
+    if [[ "$project" == "horizon" || "$project" == "python-openstackclient" ]]; then
+        # Pattern for projects IN constraints file - matches their upstream docs pattern
+        local tox_text_docs_target="
 
 [testenv:text-docs]
 description =
@@ -137,6 +143,35 @@ deps =
   -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version}
   -r{toxinidir}/doc/requirements.txt
 "
+    elif [ "$project" == "venus" ]; then
+        # Venus has incompatible elasticsearch constraint - use no constraints
+        local tox_text_docs_target="
+
+[testenv:text-docs]
+description =
+    Build documentation in text format.
+basepython = $PYTHON
+commands =
+  sphinx-build --keep-going -j auto -b text doc/source doc/build/text
+deps =
+  -r{toxinidir}/doc/requirements.txt
+"
+    else
+        # Pattern for projects NOT in constraints file - uses install_command
+        # This matches upstream cinder docs pattern
+        local tox_text_docs_target="
+
+[testenv:text-docs]
+description =
+    Build documentation in text format.
+basepython = $PYTHON
+install_command = python -m pip install -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version} {opts} {packages}
+commands =
+  sphinx-build --keep-going -j auto -b text doc/source doc/build/text
+deps =
+  -r{toxinidir}/doc/requirements.txt
+"
+    fi
 
     # API-Ref tox target definition (only used if OS_API_DOCS=true)
     local tox_text_api_ref_target="
@@ -190,6 +225,11 @@ deps =
         rm -rf doc/source/template_guide/
     elif [[ "$project" == "trove" || "$project" == "zaqar" ]]; then
         tox_text_docs_target+="  -r{toxinidir}/requirements.txt"
+    elif [ "$project" == "cinder" ]; then
+        # Cinder needs cryptography<47 because cursive library requires SECT571K1 curve
+        # which was removed in cryptography 47+
+        tox_text_docs_target+="
+  cryptography<47"
     fi
 
     if grep -q "text-docs" tox.ini; then
@@ -260,7 +300,7 @@ deps =
     fi
 
     # These projects have all their docs under "latest" instead of "2025.2"
-    if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ]; then
+    if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ] || [ "${project}" == "vitrage" ]; then
         _output_version="latest"
     else
         _output_version="${_os_version}"
@@ -298,8 +338,8 @@ for os_project in "${os_projects[@]}"; do
 
     echo "Generating documentation for ${os_project}. [logs -> ${WORKING_DIR}/${os_project_log_file}]"
     _os_version=$OS_VERSION
-    # The tempest project is branchless
-    if [ "${os_project}" == "tempest" ]; then
+    # tempest, venus, and vitrage are branchless
+    if [ "${os_project}" == "tempest" ] || [ "${os_project}" == "venus" ] || [ "${os_project}" == "vitrage" ]; then
         _os_version="master"
     fi
     generate_text_doc "$os_project" "$_os_version" > "${os_project_log_file}" 2>&1 &
@@ -330,3 +370,4 @@ cp -r "$WORKING_DIR"/openstack-docs-plaintext "$CURR_DIR/$OUTPUT_DIR_NAME"
 
 # TODO(lucasagomes): Should we delete the working directory ?!
 echo "Done. Documents can be found at $CURR_DIR/$OUTPUT_DIR_NAME"
+
