@@ -287,7 +287,7 @@ deps =
     fi
 
     # These projects have all their docs under "latest" instead of "2025.2"
-    if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ]; then
+    if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ] || [ "${project}" == "vitrage" ]; then
         _output_version="latest"
     else
         _output_version="${_os_version}"
@@ -325,8 +325,8 @@ for os_project in "${os_projects[@]}"; do
 
     echo "Generating documentation for ${os_project}. [logs -> ${WORKING_DIR}/${os_project_log_file}]"
     _os_version=$OS_VERSION
-    # The tempest project is branchless
-    if [ "${os_project}" == "tempest" ]; then
+    # tempest, venus, and vitrage are branchless
+    if [ "${os_project}" == "tempest" ] || [ "${os_project}" == "venus" ] || [ "${os_project}" == "vitrage" ]; then
         _os_version="master"
     fi
     generate_text_doc "$os_project" "$_os_version" > "${os_project_log_file}" 2>&1 &
