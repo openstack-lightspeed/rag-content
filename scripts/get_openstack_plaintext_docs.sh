@@ -143,6 +143,19 @@ deps =
   -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version}
   -r{toxinidir}/doc/requirements.txt
 "
+    elif [ "$project" == "venus" ]; then
+        # Venus has incompatible elasticsearch constraint - use no constraints
+        local tox_text_docs_target="
+
+[testenv:text-docs]
+description =
+    Build documentation in text format.
+basepython = $PYTHON
+commands =
+  sphinx-build --keep-going -j auto -b text doc/source doc/build/text
+deps =
+  -r{toxinidir}/doc/requirements.txt
+"
     else
         # Pattern for projects NOT in constraints file - uses install_command
         # This matches upstream cinder docs pattern
@@ -217,10 +230,6 @@ deps =
         # which was removed in cryptography 47+
         tox_text_docs_target+="
   cryptography<47"
-    elif [ "$project" == "venus" ]; then
-        # Venus needs elasticsearch<3.0.0 to avoid conflict with constraints file
-        tox_text_docs_target+="
-  elasticsearch<3.0.0"
     fi
 
     if grep -q "text-docs" tox.ini; then
