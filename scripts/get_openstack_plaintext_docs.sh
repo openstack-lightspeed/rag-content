@@ -73,6 +73,8 @@ if [ "${PRUNE_PATHS:-}" == "" ]; then
         cinder/2025.2_docs/contributor/api/cinder.api.v2.volume_metadata.txt
         cinder/2025.2_docs/contributor/api/cinder.api.v2.volumes.txt
         cinder/2025.2_docs/contributor/api/cinder.api.v2.views.volumes.txt
+        # Trove 2025.2 redirects to latest, and this file is no longer present there.
+        trove/2025.2_docs/contributor/testing.txt
     )
 fi
 
