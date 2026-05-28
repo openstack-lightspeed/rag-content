@@ -22,6 +22,8 @@ import logging
 from packaging.version import Version
 from typing import Generator, Tuple
 import xml.etree.ElementTree as ET
+
+import defusedxml.ElementTree as DefusedET
 import re
 import subprocess
 import tempfile
@@ -150,7 +152,7 @@ def red_hat_docs_path(
             # This is needed because docinfo.xml is not properly formatted XML file
             # because it does not contain a single root tag.
             docinfo_content = f.read()
-            tree = ET.fromstring(f"<root>{docinfo_content}</root>")
+            tree = DefusedET.fromstring(f"<root>{docinfo_content}</root>")
 
             productnumber = get_xml_element_text(tree, "productnumber")
             if Version(productnumber) != Version(docs_version):
@@ -1364,8 +1366,8 @@ class FileLock:
                 # Try to remove the lock file (best effort)
                 try:
                     self.lock_path.unlink()
-                except Exception:
-                    pass
+                except Exception as e:
+                    LOG.debug(f"Could not remove lock file {self.lock_path}: {e}")
             except Exception as e:
                 LOG.warning(f"Error releasing lock for {self.file_path}: {e}")
 
@@ -1849,7 +1851,7 @@ def preprocess_xml_table_cells(xml_content: str) -> str:
     """
     try:
         # Parse the XML
-        root = ET.fromstring(xml_content)
+        root = DefusedET.fromstring(xml_content)
 
         # Define the DocBook namespace
         ns = {"db": "http://docbook.org/ns/docbook"}
@@ -1910,7 +1912,7 @@ def preprocess_xml_list_titles(xml_content: str) -> str:
     """
     try:
         # Parse the XML
-        root = ET.fromstring(xml_content)
+        root = DefusedET.fromstring(xml_content)
 
         # Define the DocBook namespace
         ns = {"db": "http://docbook.org/ns/docbook"}
@@ -2077,7 +2079,7 @@ class RelNotesConverter:
                     str(xml_temp_path.absolute()),
                     str(input_for_conversion.absolute()),
                 ]
-                subprocess.run(asciidoctor_cmd, check=True, capture_output=True)
+                subprocess.run(asciidoctor_cmd, check=True, capture_output=True)  # noqa: S603
 
                 # Step 1.5: Preprocess XML to fix issues
                 with open(xml_temp_path, "r", encoding="utf-8") as f:
@@ -2107,7 +2109,7 @@ class RelNotesConverter:
                     "-o",
                     str(output_path.absolute()),
                 ]
-                subprocess.run(pandoc_cmd, check=True, capture_output=True)
+                subprocess.run(pandoc_cmd, check=True, capture_output=True)  # noqa: S603
 
                 # Step 3: Convert any HTML tables to markdown pipe tables
                 with open(output_path, "r", encoding="utf-8") as f:
@@ -2273,7 +2275,7 @@ class DocsConverter:
                         str(xml_temp_path.absolute()),
                         str(input_for_conversion.absolute()),
                     ]
-                    result = subprocess.run(
+                    result = subprocess.run(  # noqa: S603
                         asciidoctor_cmd, check=True, capture_output=True, text=True
                     )
                     if result.stderr:
@@ -2319,7 +2321,7 @@ class DocsConverter:
                         "-o",
                         str(output_path.absolute()),
                     ]
-                    subprocess.run(
+                    subprocess.run(  # noqa: S603
                         pandoc_cmd, check=True, capture_output=True, text=True
                     )
 

@@ -6,9 +6,10 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.10.0
+    rev: v0.15.4
     hooks:
-      - id: ruff
+      - id: ruff-check
+        args: [--extend-select, S]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
