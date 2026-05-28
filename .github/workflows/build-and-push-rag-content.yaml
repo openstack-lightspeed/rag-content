@@ -20,7 +20,7 @@ on:
 
 env:
   IMAGE_NAME: quay.io/openstack-lightspeed/${{ github.event.repository.name }}
-  OS_VERSION: 2025.2
+  OS_VERSION: 2026.1
   OS_API_DOCS: false
   # Default tag value for manual triggers of the job or other events to prevent
   # overwriting nightly-*, commit, or os-docs-* tags. Ideally this value should
