@@ -1,5 +1,5 @@
 lightspeed-rag-content @ git+https://github.com/lightspeed-core/rag-content@main
-defusedxml
-packaging
-lxml
-html2text
+defusedxml==0.7.1
+packaging==26.2
+lxml==6.1.1
+html2text==2025.4.15
