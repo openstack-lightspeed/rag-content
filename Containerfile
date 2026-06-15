@@ -166,6 +166,9 @@ RUN if [ "$BUILD_OCP_DOCS" = "true" ] && [ -d "/rag-content/rag-docs/ocp-product
         mkdir -p /rag-content/ocp_vector_db; \
     fi
 
+# Download the OKP embeddings model
+RUN python ./scripts/download_okp_embeddings.py --output-dir okp_embeddings_model
+
 # Clean up the OKP content
 RUN rm -rf ./okp-content
 
@@ -173,6 +176,7 @@ RUN rm -rf ./okp-content
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=lightspeed-core-rag-builder /rag-content/vector_db /rag/vector_db/os_product_docs
 COPY --from=lightspeed-core-rag-builder /rag-content/embeddings_model /rag/embeddings_model
+COPY --from=lightspeed-core-rag-builder /rag-content/okp_embeddings_model /rag/okp_embeddings_model
 COPY --from=lightspeed-core-rag-builder /rag-content/ocp_vector_db /rag/ocp_vector_db
 
 ARG INDEX_NAME
