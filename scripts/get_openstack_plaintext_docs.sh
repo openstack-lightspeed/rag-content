@@ -48,7 +48,7 @@ OS_API_DOCS=${OS_API_DOCS:-false}
 _OS_PROJECTS="nova horizon keystone neutron neutron-lib cinder manila glance \
 swift ceilometer octavia designate heat placement ironic barbican aodh \
 watcher adjutant blazar cyborg magnum mistral skyline-apiserver \
-skyline-console storlets venus vitrage zun python-openstackclient tempest \
+skyline-console storlets vitrage zun python-openstackclient tempest \
 trove zaqar masakari"
 OS_PROJECTS=${OS_PROJECTS:-$_OS_PROJECTS}
 
@@ -146,19 +146,6 @@ commands =
   sphinx-build --keep-going -j auto -b text doc/source doc/build/text
 deps =
   -c{env:TOX_CONSTRAINTS_FILE:https://releases.openstack.org/constraints/upper/$_os_version}
-  -r{toxinidir}/doc/requirements.txt
-"
-    elif [ "$project" == "venus" ]; then
-        # Venus has incompatible elasticsearch constraint - use no constraints
-        echo "
-
-[testenv:text-docs]
-description =
-    Build documentation in text format.
-basepython = $PYTHON
-commands =
-  sphinx-build --keep-going -j auto -b text doc/source doc/build/text
-deps =
   -r{toxinidir}/doc/requirements.txt
 "
     else
@@ -309,7 +296,7 @@ deps =
     fi
 
     # These projects have all their docs under "latest" instead of "2025.2"
-    if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "venus" ] || [ "${project}" == "vitrage" ]; then
+    if  [ "${project}" == "adjutant" ] || [ "${project}" == "cyborg" ] || [ "${project}" == "tempest" ] || [ "${project}" == "vitrage" ]; then
         _output_version="latest"
     else
         _output_version="${_os_version}"
@@ -347,8 +334,8 @@ for os_project in "${os_projects[@]}"; do
 
     echo "Generating documentation for ${os_project}. [logs -> ${WORKING_DIR}/${os_project_log_file}]"
     _os_version=$OS_VERSION
-    # tempest, venus, and vitrage are branchless
-    if [ "${os_project}" == "tempest" ] || [ "${os_project}" == "venus" ] || [ "${os_project}" == "vitrage" ]; then
+    # tempest and vitrage are branchless
+    if [ "${os_project}" == "tempest" ] || [ "${os_project}" == "vitrage" ]; then
         _os_version="master"
     fi
     generate_text_doc "$os_project" "$_os_version" > "${os_project_log_file}" 2>&1 &
