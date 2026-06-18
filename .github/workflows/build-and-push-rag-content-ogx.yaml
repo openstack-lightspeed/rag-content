@@ -1,4 +1,4 @@
-name: "Build and push rag-content container image"
+name: "Build and push rag-content-ogx container image"
 
 on:
   workflow_dispatch:
@@ -16,9 +16,12 @@ on:
       - reopened
 
   schedule:
-    - cron: '15 02 * * *'
+    - cron: '45 02 * * *'
 
 jobs:
-  build-and-push-rag-content:
+  build-and-push-rag-content-ogx:
     uses: ./.github/workflows/_build-and-push-image.yaml
     secrets: inherit
+    with:
+      index_name_suffix: "-ogx"
+      extra_build_args: "VECTOR_DB_TYPE=llamastack-faiss"
