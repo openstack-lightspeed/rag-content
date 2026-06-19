@@ -56,7 +56,7 @@ jobs:
       # which index is contained within each image.
       - name: Set INDEX_NAME env variable
         run: |
-          echo "INDEX_NAME=os-docs-${{ env.OS_VERSION }}" >> $GITHUB_ENV
+          echo "INDEX_NAME=os-docs-${{ env.OS_VERSION }}-ogx" >> $GITHUB_ENV
 
       # For periodic nightly builds, use nightly-YYYYMMDD and os-docs-2025.2
       # tags to avoid overwriting commit-based tags. This prevents breaking
@@ -92,6 +92,7 @@ jobs:
             DOCS_LINK_UNREACHABLE_ACTION=fail
             OS_API_DOCS=${{ env.OS_API_DOCS }}
             BUILD_OCP_DOCS=false
+            VECTOR_DB_TYPE=llamastack-faiss
           context: .
           containerfiles: |
             ./Containerfile
