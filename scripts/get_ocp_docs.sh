@@ -14,11 +14,12 @@
 set -eou pipefail
 set -x
 
-SCRIPT_DIR="$(realpath "$( dirname -- "${BASH_SOURCE[0]}" )")"
+OLS_DOC_REPO=${OLS_DOC_REPO:-"https://github.com/openshift/lightspeed-rag-content.git"}
+# OpenShift Versions to create DBs for
+# If we set it to empty string, it will generate all the available ones.
+OCP_VERSIONS=${OCP_VERSIONS:-"4.16 4.18 latest"}
 
-if [[ -z "${OLS_DOC_REPO}" ]]; then
-    OLS_DOC_REPO="https://github.com/openshift/lightspeed-rag-content.git"
-fi
+SCRIPT_DIR="$(realpath "$( dirname -- "${BASH_SOURCE[0]}" )")"
 
 # The current directory where the script was invoked
 CURR_DIR=$(pwd)
@@ -27,13 +28,6 @@ OUTPUT_DIR_NAME=${OUTPUT_DIR_NAME:-ocp-product-docs-plaintext}
 # Ensure OUTPUT_DIR_NAME is an absolute path
 if [[ $OUTPUT_DIR_NAME != /* ]]; then
     OUTPUT_DIR_NAME="${CURR_DIR}/${OUTPUT_DIR_NAME}"
-fi
-
-# OpenShift Versions to create DBs for
-# If we set it to empty string, it will generate all the available ones.
-_OCP_VERSIONS="4.16 4.18 latest"
-if [[ -z "${OCP_VERSIONS}" ]]; then
-    OCP_VERSIONS=${_OCP_VERSIONS}
 fi
 
 # Working directory
