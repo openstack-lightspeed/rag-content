@@ -1,3 +1,5 @@
+> **This repository has been migrated to [openstack-k8s-operators/lightspeed-rag-content](https://github.com/openstack-k8s-operators/lightspeed-rag-content). Please open all new issues and pull requests there. This repository is archived and no longer maintained.**
+
 # [OpenStack] RAG content
 
 This repository contains scripts that can be used to generate a vector database
